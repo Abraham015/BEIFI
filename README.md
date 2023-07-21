@@ -1,4 +1,4 @@
 # BEIFI
-Rama creada para realizar el proyecto en Golang
+Rama creada para colocar el curso de Go y poder subir toda documentación al respecto
 >21-07-2023
-1. Se crea la rama go-branch para generar los archivos de Go
+1. Se crea la rama go-course
