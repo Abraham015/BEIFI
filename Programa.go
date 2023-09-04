@@ -5,162 +5,127 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"strconv"
+	"bufio"
+	"io"
+	"math"
+	"path/filepath"
+	"errors"
 )
 
 func main() {
-	/**************************************************************/
-	// Se crea la ruta para los archivos
-	folder := "./Files"
-	/**************************************************************/
-	/* Se declaran las variables del programa */
-	var typeDistance string
-	var n int
-	var typeFile string
-	/**************************************************************/
-	/* Se crean los objetos de las clases correspondientes de TSP */
-	euclidiana := Euclidiana{}
-	geografico := Geografico{}
-	ceil := Ceil{}
-	att := ATT{}
-	ma := Matrix{}
-	tool := Tools{}
-	g := General{}
-	/**************************************************************/
-	/* Se crean los objetos de las clases correspondientes de ATSP */
-	explicit := Explicit{}
-	/**************************************************************/
-	files, err := ioutil.ReadDir(folder)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+    folder := "./Files"
+    var typeDistance string
+    var n int
+    var typeFile string
 
-	for _, file := range files {
-		if !file.IsDir() {
-			fmt.Println("------------------------------------------")
-			fmt.Println("El nombre del archivo es:", file.Name())
-			n = g.NumberCities(file)
-			fmt.Println("El número de ciudades es", n)
-			typeFile = g.TypeProblem(file)
+    files, err := ioutil.ReadDir(folder)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
 
-			if typeFile == "ATSP" {
-				typeDistance = tool.TypeDistanceATSP(file)
-				switch typeDistance {
-				case "Explicita":
-					explicit.ProblemaExplicit(file, n)
-				}
-			} else {
-				typeDistance = tool.TypeDistance(file)
-				switch typeDistance {
-				case "Euclidiana":
-					euclidiana.ProblemaEuclidiano(file, n)
-				case "Geografica":
-					geografico.ProblemaGeografico(file, n)
-				case "Circular":
-					ceil.ProblemaCeil(file, n)
-				case "ATT":
-					att.ProblemaATT(file, n)
-				case "DiagonalSuperior":
-					ma.ProblemaSuperior(file, n)
-				case "DiagonalInferior":
-					ma.ProblemaInferior(file, n)
-				}
-			}
-		}
-	}
+    for _, fileInfo := range files {
+        if !fileInfo.IsDir() {
+            fmt.Println("------------------------------------------")
+            fmt.Println("El nombre del archivo es:", fileInfo.Name())
+            // Abre el archivo utilizando os.Open
+            file, err := os.Open(filepath.Join(folder, fileInfo.Name()))
+            if err != nil {
+                fmt.Println("Error al abrir el archivo:", err)
+                continue
+            }
+            defer file.Close() // Asegura que el archivo se cierre al salir de la función
+
+            n, err = NumberCities(file)
+            if err != nil {
+                fmt.Println("Error al obtener el número de ciudades:", err)
+                continue
+            }
+            fmt.Println("El número de ciudades es", n)
+
+            typeFile = TypeProblem(file)
+
+            if typeFile == "ATSP" {
+                file.Seek(0, 0) // Asegura que el archivo esté al principio antes de abrirlo nuevamente
+                typeDistance = TypeDistanceATSP(file)
+                switch typeDistance {
+                case "Explicita":
+                    ProblemaExplicit(file, n)
+                }
+            } else {
+                file.Seek(0, 0) // Asegura que el archivo esté al principio antes de abrirlo nuevamente
+                typeDistance = TypeDistance(file)
+                switch typeDistance {
+                case "Euclidiana":
+                    ProblemaEuclidiano(file, n)
+                case "Geografica":
+                    ProblemaGeografico(file, n)
+                case "Circular":
+                    ProblemaCeil(file, n)
+                case "ATT":
+                    ProblemaATT(file, n)
+                case "DiagonalSuperior":
+                    ProblemaSuperior(filepath.Join(folder, fileInfo.Name()), n)
+                case "DiagonalInferior":
+                    ProblemaInferior(file, n)
+                }
+            }
+        }
+    }
 }
 
-type General struct{}
+func NumberCities(file *os.File) (int, error) {
+    defer file.Seek(0, 0) // Asegura que el archivo esté al principio antes de leerlo
 
-func (g *General) NumberCities(file os.FileInfo) int {
-	cities := 0
-	name := file.Name()
-	var number string
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        line := scanner.Text()
+        if strings.HasPrefix(line, "DIMENSION") {
+            parts := strings.Split(line, ":")
+            if len(parts) != 2 {
+                return 0, errors.New("Formato DIMENSION incorrecto")
+            }
+            dimensionStr := strings.TrimSpace(parts[1])
+            dimension, err := strconv.Atoi(dimensionStr)
+            if err != nil {
+                return 0, err
+            }
+            return dimension, nil
+        }
+    }
 
-	for _, c := range name {
-		if c >= '0' && c <= '9' {
-			number += string(c)
-		}
-	}
-
-	cities, _ = strconv.Atoi(number)
-	return cities
+    return 0, errors.New("No se encontró la dimensión")
 }
 
-func (g *General) TypeProblem(file os.FileInfo) string {
-	typeProblem := ""
-	data, err := ioutil.ReadFile(file.Name())
-	if err != nil {
-		fmt.Println(err)
-		return typeProblem
-	}
+func TypeProblem(file *os.File) string {
+    typeProblem := ""
 
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "TYPE : TSP" {
-			typeProblem = "TSP"
-			break
-		} else if strings.TrimSpace(line) == "TYPE: ATSP" {
-			typeProblem = "ATSP"
-			break
-		}
-	}
+    // Obtén el nombre y la ruta del archivo
+    fileName := file.Name()
 
-	return typeProblem
+    data, err := ioutil.ReadFile(fileName)
+    if err != nil {
+        fmt.Println(err)
+        return typeProblem
+    }
+
+    lines := strings.Split(string(data), "\n")
+    for _, line := range lines {
+        if strings.TrimSpace(line) == "TYPE : TSP" {
+            typeProblem = "TSP"
+            break
+        } else if strings.TrimSpace(line) == "TYPE: ATSP" {
+            typeProblem = "ATSP"
+            break
+        }
+    }
+
+    return typeProblem
 }
 
-type General struct{}
 
-func (g *General) NumberCities(file *os.File) int {
-	cities := 0
-	name := file.Name()
-	var number string
-
-	for _, c := range name {
-		switch c {
-		case '1', '2', '3', '4', '5', '6', '7', '8', '9', '0':
-			number += string(c)
-		}
-	}
-
-	cities, _ = strconv.Atoi(number)
-	return cities
-}
-
-func (g *General) TypeProblem(file *os.File) string {
-	var t string
-
-	reader := bufio.NewReader(file)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			fmt.Println(err)
-			break
-		}
-
-		if strings.TrimSpace(line) == "TYPE : TSP" {
-			t = "TSP"
-			break
-		} else if strings.TrimSpace(line) == "TYPE: ATSP" {
-			t = "ATSP"
-			break
-		}
-
-		if err == io.EOF {
-			break
-		}
-	}
-
-	return t
-}
-
-type Tools struct{}
-
-func NewTools() *Tools {
-	return &Tools{}
-}
-
-func (t *Tools) TypeDistance(file *os.File) string {
+func TypeDistance(file *os.File) string {
 	distance := ""
 	scanner := bufio.NewScanner(file)
 
@@ -189,10 +154,12 @@ func (t *Tools) TypeDistance(file *os.File) string {
 		}
 	}
 
+	defer file.Close()
+
 	return distance
 }
 
-func (t *Tools) TypeDistanceATSP(file *os.File) string {
+func TypeDistanceATSP(file *os.File) string {
 	distance := ""
 	scanner := bufio.NewScanner(file)
 
@@ -208,7 +175,7 @@ func (t *Tools) TypeDistanceATSP(file *os.File) string {
 	return distance
 }
 
-func (t *Tools) CompletarMatriz(matriz [][]int, size int) {
+func CompletarMatriz(matriz [][]int, size int) {
 	for i := 1; i < size; i++ {
 		for j := 0; j < size; j++ {
 			if matriz[i][j] != 0 {
@@ -218,7 +185,7 @@ func (t *Tools) CompletarMatriz(matriz [][]int, size int) {
 	}
 }
 
-func (t *Tools) CalcularCostoCamino(matriz [][]int, camino []int) int {
+func CalcularCostoCamino(matriz [][]int, camino []int) int {
 	costoTotal := 0
 	n := len(camino)
 
@@ -231,7 +198,7 @@ func (t *Tools) CalcularCostoCamino(matriz [][]int, camino []int) int {
 	return costoTotal
 }
 
-func (t *Tools) ImprimirMatriz(matriz [][]int, n int) {
+func ImprimirMatriz(matriz [][]int, n int) {
 	for i := 0; i < n; i++ {
 		for j := 0; j < n; j++ {
 			print(matriz[i][j], " ")
@@ -240,7 +207,7 @@ func (t *Tools) ImprimirMatriz(matriz [][]int, n int) {
 	}
 }
 
-func (t *Tools) EscribirMatrizEnCSV(nombreArchivo string, matriz [][]int) {
+func EscribirMatrizEnCSV(nombreArchivo string, matriz [][]int) {
 	file, err := os.Create(nombreArchivo)
 	if err != nil {
 		println("Error al crear el archivo CSV:", err)
@@ -262,9 +229,8 @@ func (t *Tools) EscribirMatrizEnCSV(nombreArchivo string, matriz [][]int) {
 	}
 }
 
-type ATT struct{}
 
-func (a *ATT) ReadFileATT(file *os.File, numbernode []string, firstnode, secondnode []int) error {
+func ReadFileATT(file *os.File, numbernode []string, firstnode, secondnode []int) error {
 	count := 0
 	flag := 0
 
@@ -305,7 +271,7 @@ func (a *ATT) ReadFileATT(file *os.File, numbernode []string, firstnode, secondn
 	return nil
 }
 
-func (a *ATT) DistanciaATT(numbernode []string, x, y []int) int {
+func DistanciaATT(numbernode []string, x, y []int) int {
 	xd := make([]float64, len(numbernode))
 	yd := make([]float64, len(numbernode))
 	dij := 0
@@ -332,23 +298,21 @@ func (a *ATT) DistanciaATT(numbernode []string, x, y []int) int {
 	return dij
 }
 
-func (a *ATT) ProblemaATT(file *os.File, n int) {
+func ProblemaATT(file *os.File, n int) {
 	numbernode := make([]string, n)
 	firstnode := make([]int, n)
 	secondnode := make([]int, n)
 
-	err := a.ReadFileATT(file, numbernode, firstnode, secondnode)
+	err := ReadFileATT(file, numbernode, firstnode, secondnode)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
 
-	fmt.Println("La distancia total para este archivo es de", a.DistanciaATT(numbernode, firstnode, secondnode))
+	fmt.Println("La distancia total para este archivo es de", DistanciaATT(numbernode, firstnode, secondnode))
 }
 
-type Ceil struct{}
-
-func (c *Ceil) ReadFileCeil(file *os.File, numbernode []string, firstnode, secondnode []float64) error {
+func ReadFileCeil(file *os.File, numbernode []string, firstnode, secondnode []float64) error {
 	count := 0
 	flag := 0
 
@@ -389,7 +353,7 @@ func (c *Ceil) ReadFileCeil(file *os.File, numbernode []string, firstnode, secon
 	return nil
 }
 
-func (c *Ceil) DistanciaCeil(nodes []string, x, y []float64) int {
+func DistanciaCeil(nodes []string, x, y []float64) int {
 	var x1, x2, y1, y2 float64
 	distance := 0
 
@@ -406,26 +370,24 @@ func (c *Ceil) DistanciaCeil(nodes []string, x, y []float64) int {
 	return distance
 }
 
-func (c *Ceil) ProblemaCeil(file *os.File, n int) {
+func ProblemaCeil(file *os.File, n int) {
 	numbernode := make([]string, n)
 	firstnode := make([]float64, n)
 	secondnode := make([]float64, n)
 
-	err := c.ReadFileCeil(file, numbernode, firstnode, secondnode)
+	err := ReadFileCeil(file, numbernode, firstnode, secondnode)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
 
-	fmt.Println("La distancia total para este archivo es de", c.DistanciaCeil(numbernode, firstnode, secondnode))
+	fmt.Println("La distancia total para este archivo es de", DistanciaCeil(numbernode, firstnode, secondnode))
 }
 
-type Euclidiana struct{}
-
-func (e *Euclidiana) ReadFileEuclidiana(file *os.File, numbernode []string, firstnode, secondnode []int) error {
+func ReadFileEuclidiana(file *os.File, numbernode []string, firstnode, secondnode []int) error {
 	count := 0
 	flag := 0
-	i := 1
+	//i := 1
 
 	reader := bufio.NewReader(file)
 	for {
@@ -487,7 +449,7 @@ func (e *Euclidiana) ReadFileEuclidiana(file *os.File, numbernode []string, firs
 	return nil
 }
 
-func (e *Euclidiana) DistanciaEuclidiana(nodes []string, x, y []int) int {
+func DistanciaEuclidiana(nodes []string, x, y []int) int {
 	var x1, x2, y1, y2 int
 	distance := 0
 
@@ -504,23 +466,21 @@ func (e *Euclidiana) DistanciaEuclidiana(nodes []string, x, y []int) int {
 	return distance
 }
 
-func (e *Euclidiana) ProblemaEuclidiano(file *os.File, n int) {
+func ProblemaEuclidiano(file *os.File, n int) {
 	numbernode := make([]string, n)
 	firstnode := make([]int, n)
 	secondnode := make([]int, n)
 
-	err := e.ReadFileEuclidiana(file, numbernode, firstnode, secondnode)
+	err := ReadFileEuclidiana(file, numbernode, firstnode, secondnode)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
 
-	fmt.Println("La distancia total para este archivo es de", e.DistanciaEuclidiana(numbernode, firstnode, secondnode))
+	fmt.Println("La distancia total para este archivo es de", DistanciaEuclidiana(numbernode, firstnode, secondnode))
 }
 
-type Geografica struct{}
-
-func (g *Geografica) DistanciaGeografica(numbernode []string, x, y []float64) int {
+func DistanciaGeografica(numbernode []string, x, y []float64) int {
 	var distance int
 	var q1, q2, q3 float64
 	RRR := 6378.388 // Radio de la Tierra en km
@@ -550,74 +510,222 @@ func (g *Geografica) DistanciaGeografica(numbernode []string, x, y []float64) in
 	return distance
 }
 
-func (g *Geografica) ProblemaGeografico(file *os.File, n int) {
+func ProblemaGeografico(file *os.File, n int) {
 	numbernode := make([]string, n)
 	firstnode := make([]float64, n)
 	secondnode := make([]float64, n)
 
 	// Aquí deberías implementar la función ReadFileGeografica en Go para leer los datos del archivo
 
-	fmt.Println("La distancia total para este archivo es de", g.DistanciaGeografica(numbernode, firstnode, secondnode))
+	fmt.Println("La distancia total para este archivo es de", DistanciaGeografica(numbernode, firstnode, secondnode))
 }
 
-type Matrix struct {
-	Tool Tools
-}
+func ReadFileInferior(file *os.File, matriz [][]int, n int) {
+	scanner := bufio.NewScanner(file)
 
-func (m *Matrix) ReadFileInferior(file *os.File, matriz [][]int, n int) {
-	// Implementa la función ReadFileInferior aquí
-}
+	// Variables para rastrear la fila y la columna
+	fila := 0
+	columna := 0
 
-func (m *Matrix) ReadFileSuperior(file *os.File, matriz [][]int, numbernode int) {
-	// Implementa la función ReadFileSuperior aquí
-}
+	// Bucle principal para leer el archivo
+	for scanner.Scan() {
+		linea := scanner.Text()
+		linea = strings.TrimSpace(linea)
 
-func (m *Matrix) DistanciaMATRIX(matrix [][]int, n int) {
-	// Implementa la función DistanciaMATRIX aquí
-}
+		if fila < 7 {
+			// Saltar las primeras 7 líneas
+			fila++
+			if strings.Contains(linea, "DISPLAY_DATA_TYPE : TWOD_DISPLAY") {
+				continue
+			}
+		} else if linea == "EOF" || fila >= n+7 {
+			// Salir si encontramos EOF o superamos el número de filas especificado
+			break
+		} else {
+			// Dividir la línea en valores separados por espacios en blanco
+			valores := strings.Fields(linea)
 
-func (m *Matrix) ProblemaSuperior(file *os.File, n int) {
-	data := make([][]int, n)
-	for i := 0; i < n; i++ {
-		data[i] = make([]int, n)
+			for _, valorStr := range valores {
+				valor, err := strconv.Atoi(valorStr)
+				if err != nil {
+					fmt.Println("Error al convertir el valor:", err)
+					return
+				}
+
+				if valor == 0 {
+					if columna < n {
+						// Rellenar el resto de la fila con ceros si se encuentra un cero antes de alcanzar la dimensión total
+						for columna < n {
+							matriz[fila-7][columna] = 0
+							columna++
+						}
+					}
+				} else {
+					matriz[fila-7][columna] = valor
+				}
+
+				// Mover a la siguiente columna
+				columna++
+
+				// Comprobar si hemos alcanzado la última columna
+				if columna == n {
+					fila++
+					columna = 0
+				}
+			}
+		}
 	}
 
-	// Implementa la lectura del archivo y llamada a ReadFileSuperior aquí
+	// Rellenar con ceros si la matriz no se ha llenado completamente
+	for fila < n {
+		for columna = 0; columna < n; columna++ {
+			matriz[fila-7][columna] = 0
+		}
+		fila++
+	}
+}
+
+func ReadFileSuperior(file *os.File, matriz [][]int, numbernode int) {
+	scanner := bufio.NewScanner(file)
+
+	// Variables para rastrear la fila
+	fila := 0
+
+	// Bucle principal para leer el archivo
+	for scanner.Scan() {
+		lineaActual := scanner.Text()
+		lineaActual = strings.TrimSpace(lineaActual)
+
+		if fila >= 8 && lineaActual != "EOF" {
+			linea := strings.Fields(lineaActual)
+			for columna, valorStr := range linea {
+				valor, err := strconv.Atoi(valorStr)
+				if err != nil {
+					fmt.Println("Error al convertir el valor:", err)
+					return
+				}
+				matriz[fila-8][columna] = valor
+			}
+		}
+
+		fila++
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error al leer el archivo:", err)
+	}
+}
+
+func distanciaMATRIX(matrix [][]int, n int) {
+	visitados := make([]int, n)
+	ruta := make([]int, n)
+	mejorRuta := make([]int, n)
+	mejorDistancia := math.MaxInt
+
+	var distanciaActual, element, posActual int
+
+	for i := 0; i < n; i++ {
+		visitados[i] = 0
+		ruta[i] = -1
+	}
+
+	visitados[0] = 1
+	ruta[0] = 0
+	posActual = 0
+
+	for {
+		element = -1
+
+		for i := 0; i < n; i++ {
+			if visitados[i] == 0 {
+				if element == -1 {
+					element = i
+				}
+				distanciaActual = matrix[posActual][i]
+				if distanciaActual < matrix[posActual][element] {
+					element = i
+				}
+			}
+		}
+
+		if element == -1 {
+			break
+		}
+
+		visitados[element] = 1
+		ruta[element] = posActual
+		posActual = element
+	}
+
+	distanciaActual = matrix[posActual][0]
+	ruta[n-1] = 0
+	ruta[0] = posActual
+
+	for i := 0; i < n; i++ {
+		if i != n-1 {
+			distanciaActual += matrix[ruta[i]][ruta[i+1]]
+		}
+	}
+
+	if distanciaActual < mejorDistancia {
+		mejorDistancia = distanciaActual
+		copy(mejorRuta, ruta)
+	}
+
+	fmt.Println("La distancia total es:", mejorDistancia)
+}
+
+func ProblemaSuperior(fileName string, n int) {
+	file, err := os.Open(fileName)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return
+    }
+    defer file.Close()
+
+	matriz := make([][]int, n)
+	for i := 0; i < n; i++ {
+		matriz[i] = make([]int, n)
+	}
+
+	fmt.Println("Entra a esta funcion de superior")
+
+	ReadFileSuperior(file, matriz, n)	
 
 	fmt.Println("Matriz Superior:")
-	m.Tool.ImprimirMatriz(data, n)
+	ImprimirMatriz(matriz, n)
 
-	// Implementa el llamado a Tool.EscribirMatrizEnCSV aquí
+	EscribirMatrizEnCSV("test.csv",matriz)	
 
-	m.DistanciaMATRIX(data, n)
+	distanciaMATRIX(matriz, n)
 }
 
-func (m *Matrix) ProblemaInferior(file *os.File, n int) {
+func ProblemaInferior(file *os.File, n int) {
 	data := make([][]int, n)
 	for i := 0; i < n; i++ {
 		data[i] = make([]int, n)
 	}
+
+	fmt.Println("Entra a esta funcion de inferior")
 
 	// Implementa la lectura del archivo y llamada a ReadFileInferior aquí
 
 	fmt.Println("Matriz Inferior:")
-	m.Tool.ImprimirMatriz(data, n)
+	ImprimirMatriz(data, n)
 
 	// Implementa el llamado a Tool.EscribirMatrizEnCSV aquí
 
 	// Completa la matriz con ceros usando Tool.CompletarMatriz
 
 	fmt.Println("Matriz Completa:")
-	m.Tool.ImprimirMatriz(data, n)
+	ImprimirMatriz(data, n)
 
 	// Implementa el llamado a Tool.EscribirMatrizEnCSV aquí
 
-	m.DistanciaMATRIX(data, n)
+	distanciaMATRIX(data, n)
 }
 
-type Distance struct{}
-
-func (d *Distance) SolveATSP(distances [][]int, numCities int, tour []int) int {
+func SolveATSP(distances [][]int, numCities int, tour []int) int {
 	visited := make([]bool, numCities)
 	startCity := 0 // Puedes elegir cualquier ciudad como punto de inicio
 
@@ -628,7 +736,7 @@ func (d *Distance) SolveATSP(distances [][]int, numCities int, tour []int) int {
 	// Construir el recorrido visitando el vecino más cercano disponible
 	for i := 0; i < numCities-1; i++ {
 		currentCity := tour[i]
-		nextCity := d.findNearestNeighbor(currentCity, visited, distances)
+		nextCity := findNearestNeighbor(currentCity, visited, distances)
 		tour = append(tour, nextCity)
 		visited[nextCity] = true
 		totalDistance += distances[currentCity][nextCity]
@@ -641,7 +749,7 @@ func (d *Distance) SolveATSP(distances [][]int, numCities int, tour []int) int {
 	return totalDistance
 }
 
-func (d *Distance) findNearestNeighbor(city int, visited []bool, distances [][]int) int {
+func findNearestNeighbor(city int, visited []bool, distances [][]int) int {
 	nearestNeighbor := -1
 	minDistance := math.MaxInt32
 
@@ -655,84 +763,93 @@ func (d *Distance) findNearestNeighbor(city int, visited []bool, distances [][]i
 	return nearestNeighbor
 }
 
-type Distance struct{}
+func ReadExplicit(file *os.File, data [][]int, n int) error {
+    reader := bufio.NewReader(file)
 
-func (d *Distance) SolveATSP(distances [][]int, numCities int, tour []int) int {
-	// Implementa la lógica de SolveATSP aquí (código previamente proporcionado)
+    // Ignorar las primeras 7 líneas del archivo
+    for i := 0; i < 7; i++ {
+        _, err := reader.ReadString('\n')
+        if err != nil {
+            return err
+        }
+    }
+
+    row := 0
+    col := 0
+    for {
+        line, err := reader.ReadString('\n')
+        if err != nil {
+            if err == io.EOF {
+                break
+            }
+            return err
+        }
+
+        line = strings.TrimSpace(line)
+        if line == "EOF" {
+            break
+        }
+
+        values := strings.Fields(line)
+        for _, valueStr := range values {
+            value, err := strconv.Atoi(valueStr)
+            if err != nil {
+                return err
+            }
+
+            if value == 9999 {
+                // Saltar al siguiente elemento de la siguiente fila
+                row++
+                col = 0
+            } else {
+                data[row][col] = value
+                col++
+            }
+
+            // Comprobar si hemos llenado completamente la matriz
+            if row == n {
+                break
+            }
+        }
+
+        // Comprobar si hemos llenado completamente la matriz
+        if row == n {
+            break
+        }
+    }
+
+    // Rellenar con ceros si la matriz no se ha llenado completamente
+    for row < n {
+        for col = 0; col < n; col++ {
+            data[row][col] = 0
+        }
+        row++
+    }
+
+    return nil
 }
 
-type Explicit struct {
-	distance Distance
-}
 
-func (e *Explicit) ReadExplicit(file string, data [][]int, n int) error {
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		return err
-	}
+func ProblemaExplicit(file *os.File, n int) {
+    data := make([][]int, n)
+    for i := range data {
+        data[i] = make([]int, n)
+    }
 
-	lines := strings.Split(string(content), "\n")
-	row := 0
-	col := 0
+    err := ReadExplicit(file, data, n)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
 
-	for _, line := range lines[7:] {
-		if line == "EOF" {
-			break
-		}
+    var tour []int
+    totalDistance := SolveATSP(data, n, tour)
 
-		values := strings.Fields(line)
-		for _, value := range values {
-			num := 0
-			if value != "9999" {
-				num = parseValue(value)
-			}
+    fmt.Println("Recorrido óptimo:")
+    for _, city := range tour {
+        fmt.Printf("%d -> ", city)
+    }
+    fmt.Println("0")
 
-			if num == 9999 {
-				row++
-				col = 0
-			} else {
-				data[row][col] = num
-				col++
-			}
-
-			if row == n {
-				break
-			}
-		}
-
-		if row == n {
-			break
-		}
-	}
-
-	return nil
-}
-
-func parseValue(value string) int {
-	// Implementa la conversión del valor de string a int aquí
-	// Puedes usar strconv.Atoi() u otra función de conversión adecuada
-}
-
-func (e *Explicit) ProblemaExplicit(file string, n int) {
-	data := make([][]int, n)
-	for i := range data {
-		data[i] = make([]int, n)
-	}
-
-	err := e.ReadExplicit(file, data, n)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-
-	var tour []int
-	totalDistance := e.distance.SolveATSP(data, n, tour)
-
-	fmt.Println("Recorrido óptimo:")
-	for _, city := range tour {
-		fmt.Printf("%d -> ", city)
-	}
-	fmt.Println("0")
-
-	fmt.Println("Distancia total recorrida:", totalDistance)
+    fmt.Println("Distancia total recorrida:", totalDistance)
 }
