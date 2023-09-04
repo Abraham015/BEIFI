@@ -10,4 +10,4 @@ Rama creada para realizar el proyecto en Golang
 1. Se arregla la sintaxis de la primera versión de go, además se añade un archivo para realizar la prueba.
 2. Se eliminan los objetos, se mantienen únicamente las funciones de cada uno de los programas que se tenían en java, es decir las clases, solo se conservan los métodos principales que nos ayudan a hacer las operaciones
 3. Se adaptan las funciones de lectura para la diagonal
-4. 
+4. Se hace la primera version del calculo
