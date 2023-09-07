@@ -56,6 +56,7 @@ func main() {
             } else {
                 file.Seek(0, 0) // Asegura que el archivo esté al principio antes de abrirlo nuevamente
                 typeDistance = TypeDistance(file)
+				fmt.Println("El tipo de problema es: "+typeDistance)
                 switch typeDistance {
                 case "Euclidiana":
                     ProblemaEuclidiano(file, n)
@@ -68,7 +69,7 @@ func main() {
                 case "DiagonalSuperior":
                     ProblemaSuperior(filepath.Join(folder, fileInfo.Name()), n)
                 case "DiagonalInferior":
-                    ProblemaInferior(file, n)
+                    ProblemaInferior(filepath.Join(folder, fileInfo.Name()), n)
                 }
             }
         }
@@ -147,6 +148,8 @@ func TypeDistance(file *os.File) string {
 			scanner.Scan() // Read the next line for type
 			distance = "DiagonalInferior"
 			if strings.Contains(scanner.Text(), "LOWER_DIAG_ROW") {
+				distance = "DiagonalInferior"
+			}else{
 				distance = "DiagonalSuperior"
 			}
 		case "EDGE_WEIGHT_TYPE: EUC_2D":
@@ -521,68 +524,162 @@ func ProblemaGeografico(file *os.File, n int) {
 }
 
 func ReadFileInferior(file *os.File, matriz [][]int, n int) {
-	scanner := bufio.NewScanner(file)
+	/*reader := bufio.NewReader(file)
 
-	// Variables para rastrear la fila y la columna
-	fila := 0
-	columna := 0
+    // Variables para rastrear la fila y la columna
+    fila := 0
+    columna := 0
 
-	// Bucle principal para leer el archivo
-	for scanner.Scan() {
-		linea := scanner.Text()
-		linea = strings.TrimSpace(linea)
+    // Bucle principal para leer el archivo
+    for {
+        linea, err := reader.ReadString('\n')
+        if err != nil && err != io.EOF {
+            fmt.Println("Error al leer el archivo:", err)
+            return
+        }
 
-		if fila < 7 {
-			// Saltar las primeras 7 líneas
-			fila++
-			if strings.Contains(linea, "DISPLAY_DATA_TYPE : TWOD_DISPLAY") {
+        if err == io.EOF && len(linea) == 0 {
+            break
+        }
+
+        linea = strings.TrimSpace(linea)
+
+        if fila < 7 {
+            // Saltar las primeras 7 líneas
+            fila++
+            if strings.Contains(linea, "DISPLAY_DATA_TYPE : TWOD_DISPLAY") {
+                continue
+            }
+        } else if linea == "EOF" || fila >= n+7 {
+            // Salir si encontramos EOF o superamos el número de filas especificado
+            break
+        } else {
+            // Dividir la línea en valores separados por espacios en blanco
+            valores := strings.Fields(linea)
+
+            for _, valorStr := range valores {
+                valor, err := strconv.Atoi(valorStr)
+                if err != nil {
+                    fmt.Println("Error al convertir el valor:", err)
+                    return
+                }
+
+                if valor == 0 {
+                    if columna < n {
+                        // Rellenar el resto de la fila con ceros si se encuentra un cero antes de
+                        // alcanzar la dimensión total
+                        for columna < n {
+                            matriz[fila-7][columna] = 0
+                            columna++
+                        }
+                    }
+                } else {
+                    matriz[fila-7][columna] = valor
+                }
+
+                // Mover a la siguiente columna
+                columna++
+
+                // Comprobar si hemos alcanzado la última columna
+                if columna == n {
+                    fila++
+                    columna = 0
+                }
+            }
+        }
+    }
+
+    // Rellenar con ceros si la matriz no se ha llenado completamente
+    for fila < n {
+        for columna = 0; columna < n; columna++ {
+            matriz[fila-7][columna] = 0
+        }
+        fila++
+    }*/
+
+	/*scanner := bufio.NewScanner(file)
+
+    // Variables para rastrear la fila y la columna
+    fila := 0
+    comenzarLectura := false // Variable para controlar cuando comenzar la lectura
+
+    // Bucle principal para leer el archivo
+    for scanner.Scan() {
+        linea := scanner.Text()
+        linea = strings.TrimSpace(linea)
+		
+
+        if !comenzarLectura {
+            if strings.Contains(linea, "EOF") {
+                break // Salir si encontramos EOF antes de comenzar la lectura
+            }
+            fila++
+            if fila >= 7 {
+                comenzarLectura = true
+            }
+            continue
+        }
+
+        // Dividir la línea en valores separados por espacios en blanco
+        valores := strings.Fields(linea)
+
+        columna := 0 // Inicializa la columna en 0 para cada fila
+        for _, valorStr := range valores {
+            valor, err := strconv.Atoi(valorStr)
+            if err != nil {
+                fmt.Println("Error al convertir el valor:", err)
+                return
+            }
+			
+			if valor == 0{
 				continue
-			}
-		} else if linea == "EOF" || fila >= n+7 {
-			// Salir si encontramos EOF o superamos el número de filas especificado
-			break
-		} else {
-			// Dividir la línea en valores separados por espacios en blanco
-			valores := strings.Fields(linea)
-
-			for _, valorStr := range valores {
-				valor, err := strconv.Atoi(valorStr)
-				if err != nil {
-					fmt.Println("Error al convertir el valor:", err)
-					return
-				}
-
-				if valor == 0 {
-					if columna < n {
-						// Rellenar el resto de la fila con ceros si se encuentra un cero antes de alcanzar la dimensión total
-						for columna < n {
-							matriz[fila-7][columna] = 0
-							columna++
-						}
-					}
-				} else {
+			}else{
+				if columna < n {
 					matriz[fila-7][columna] = valor
 				}
-
-				// Mover a la siguiente columna
-				columna++
-
-				// Comprobar si hemos alcanzado la última columna
-				if columna == n {
-					fila++
-					columna = 0
-				}
 			}
-		}
-	}
 
-	// Rellenar con ceros si la matriz no se ha llenado completamente
-	for fila < n {
-		for columna = 0; columna < n; columna++ {
+            // Mover a la siguiente columna
+            columna++
+        }
+        fila++
+    }
+
+    // Rellenar con ceros si la matriz no se ha llenado completamente
+	for fila-7 < n {
+		for columna := 0; columna < n; columna++ {
 			matriz[fila-7][columna] = 0
 		}
 		fila++
+	}*/
+	scanner := bufio.NewScanner(file)
+	// Saltar las primeras 7 líneas
+	for i := 0; i < 7; i++ {
+		scanner.Scan()
 	}
+
+	// Leer y procesar las líneas restantes
+	fila := 0
+	for scanner.Scan() {
+		linea := scanner.Text()
+		if linea == "EOF" {
+			break
+		}
+
+		valores := strings.Fields(linea)
+		columna := 0
+		for _, valorStr := range valores {
+			valor, err := strconv.Atoi(valorStr)
+			if err != nil {
+				fmt.Println("Error al convertir el valor:", err)
+				return
+			}
+			matriz[fila][columna] = valor
+			columna++
+		}
+		fila++
+	}
+
 }
 
 func ReadFileSuperior(file *os.File, matriz [][]int, numbernode int) {
@@ -700,29 +797,30 @@ func ProblemaSuperior(fileName string, n int) {
 	distanciaMATRIX(matriz, n)
 }
 
-func ProblemaInferior(file *os.File, n int) {
-	data := make([][]int, n)
+func ProblemaInferior(fileName string, n int) {
+	file, err := os.Open(fileName)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return
+    }
+    defer file.Close()
+
+	matriz := make([][]int, n)
 	for i := 0; i < n; i++ {
-		data[i] = make([]int, n)
+		matriz[i] = make([]int, n)
 	}
 
-	fmt.Println("Entra a esta funcion de inferior")
-
-	// Implementa la lectura del archivo y llamada a ReadFileInferior aquí
+	ReadFileInferior(file,matriz,n)
 
 	fmt.Println("Matriz Inferior:")
-	ImprimirMatriz(data, n)
-
-	// Implementa el llamado a Tool.EscribirMatrizEnCSV aquí
-
-	// Completa la matriz con ceros usando Tool.CompletarMatriz
+	ImprimirMatriz(matriz, n)
 
 	fmt.Println("Matriz Completa:")
-	ImprimirMatriz(data, n)
+	ImprimirMatriz(matriz, n)
 
 	// Implementa el llamado a Tool.EscribirMatrizEnCSV aquí
 
-	distanciaMATRIX(data, n)
+	distanciaMATRIX(matriz, n)
 }
 
 func SolveATSP(distances [][]int, numCities int, tour []int) int {
