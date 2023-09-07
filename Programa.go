@@ -651,8 +651,8 @@ func ReadFileInferior(file *os.File, matriz [][]int, n int) {
 			matriz[fila-7][columna] = 0
 		}
 		fila++
-	}*/
-	scanner := bufio.NewScanner(file)
+	}
+	/*scanner := bufio.NewScanner(file)
 	// Saltar las primeras 7 líneas
 	for i := 0; i < 7; i++ {
 		scanner.Scan()
@@ -678,8 +678,141 @@ func ReadFileInferior(file *os.File, matriz [][]int, n int) {
 			columna++
 		}
 		fila++
+	}*/
+
+	/*leyendoMatriz := false
+	filaActual := 0
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		linea := scanner.Text()
+
+		if strings.HasPrefix(linea, "EDGE_WEIGHT_SECTION") {
+			leyendoMatriz = true
+			continue
+		}
+
+		if leyendoMatriz && !strings.HasPrefix(linea, "EOF") {
+			valoresStr := strings.Fields(linea)
+			fmt.Println(valoresStr)
+			if filaActual < n {
+				for j, valorStr := range valoresStr {
+					fmt.Println("El valor del Str es "+valorStr)
+					if j < n {
+						valor, err := strconv.Atoi(valorStr)
+						if err != nil {
+							fmt.Println("Error al convertir el valor:", err)
+							return
+						}
+
+						fmt.Println("El valor es "+strconv.Itoa(valor))
+						if valor==0{
+							continue
+						}else{
+							if j > filaActual {
+								fmt.Println("Entra al primer if")
+								matriz[j-1][filaActual+1] = valor
+							} else if j < filaActual {
+								fmt.Println("Entra al segundo if")
+								matriz[filaActual][j] = valor
+							}
+						}
+						
+					} else {
+						break
+					}
+				}
+				filaActual++
+			} else {
+				break
+			}
+		}
+
+		if strings.HasPrefix(linea, "EOF") {
+			break
+		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error al leer el archivo:", err)
+		return
+	}*/
+
+	scanner := bufio.NewScanner(file)
+
+	var fila int
+	var columna int
+	var continuarEnLaMismaFila bool
+
+	for i := 0; i < 7; i++ {
+		scanner.Scan()
+		linea := scanner.Text()
+		if linea == "DISPLAY_DATA_TYPE : TWOD_DISPLAY" {
+			scanner.Scan()
+		}
+	}
+
+	for fila < n {
+		scanner.Scan()
+		linea := scanner.Text()
+		if linea == "EOF" {
+			break
+		}
+
+		valoresStr := strings.Fields(linea)
+		columna = 0
+
+		for _, valorStr := range valoresStr {
+			valor, err := strconv.Atoi(valorStr)
+			if err != nil {
+				fmt.Println("Error al convertir el valor:", err)
+				return
+			}
+
+			if valor == 0 {
+				if columna < n {
+					for columna < n {
+						matriz[fila][columna] = 0
+						columna++
+					}
+				}
+				continuarEnLaMismaFila = false
+			} else {
+				matriz[fila][columna] = valor
+				continuarEnLaMismaFila = true
+				columna++
+			}
+
+			if columna == n {
+				fila++
+				columna = 0
+			}
+
+			if fila == n {
+				break
+			}
+		}
+
+		if fila == n {
+			break
+		}
+
+		if !continuarEnLaMismaFila {
+			for columna < n {
+				matriz[fila][columna] = 0
+				columna++
+			}
+			fila++
+		}
+	}
+
+	for fila < n {
+		for columna = 0; columna < n; columna++ {
+			matriz[fila][columna] = 0
+		}
+		fila++
+	}
 }
 
 func ReadFileSuperior(file *os.File, matriz [][]int, numbernode int) {
@@ -818,7 +951,7 @@ func ProblemaInferior(fileName string, n int) {
 	fmt.Println("Matriz Completa:")
 	ImprimirMatriz(matriz, n)
 
-	// Implementa el llamado a Tool.EscribirMatrizEnCSV aquí
+	EscribirMatrizEnCSV("test.csv",matriz)	
 
 	distanciaMATRIX(matriz, n)
 }
