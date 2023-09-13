@@ -11,3 +11,6 @@ Rama creada para realizar el proyecto en Golang
 2. Se eliminan los objetos, se mantienen únicamente las funciones de cada uno de los programas que se tenían en java, es decir las clases, solo se conservan los métodos principales que nos ayudan a hacer las operaciones
 3. Se adaptan las funciones de lectura para la diagonal
 4. Se hace la primera version del calculo
+
+>13-09-2023
+1. Se repara la función para leer la matriz inferior
