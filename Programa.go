@@ -61,7 +61,7 @@ func main() {
                 case "Euclidiana":
                     ProblemaEuclidiano(filepath.Join(folder, fileInfo.Name()), n)
                 case "Geografica":
-                    ProblemaGeografico(file, n)
+                    ProblemaGeografico(filepath.Join(folder, fileInfo.Name()), n)
                 case "Circular":
                     ProblemaCeil(file, n)
                 case "ATT":
@@ -186,19 +186,6 @@ func CompletarMatriz(matriz [][]int, size int) {
 			}
 		}
 	}
-}
-
-func CalcularCostoCamino(matriz [][]int, camino []int) int {
-	costoTotal := 0
-	n := len(camino)
-
-	for i := 0; i < n-1; i++ {
-		nodoActual := camino[i]
-		nodoSiguiente := camino[i+1]
-		costoTotal += matriz[nodoSiguiente][nodoActual]
-	}
-
-	return costoTotal
 }
 
 func ImprimirMatriz(matriz [][]int, n int) {
@@ -489,10 +476,10 @@ func ProblemaEuclidiano(fileName string, n int) {
 }
 
 func DistanciaGeografica(numbernode []string, x, y []float64) int {
-	var distance int
+	distance:=0
 	var q1, q2, q3 float64
 	RRR := 6378.388 // Radio de la Tierra en km
-	pi := math.Pi
+	pi :=  3.141592
 
 	latitude := make([]float64, len(numbernode))
 	longitude := make([]float64, len(numbernode))
@@ -518,14 +505,55 @@ func DistanciaGeografica(numbernode []string, x, y []float64) int {
 	return distance
 }
 
-func ProblemaGeografico(file *os.File, n int) {
+func ProblemaGeografico(fileName string, n int) {
+	file, err := os.Open(fileName)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return
+    }
+    defer file.Close()
 	numbernode := make([]string, n)
 	firstnode := make([]float64, n)
 	secondnode := make([]float64, n)
 
-	// Aquí deberías implementar la función ReadFileGeografica en Go para leer los datos del archivo
+	ReadFileGeografico(file, numbernode, firstnode, secondnode, n)
 
 	fmt.Println("La distancia total para este archivo es de", DistanciaGeografica(numbernode, firstnode, secondnode))
+}
+
+func ReadFileGeografico(file *os.File, numbernode[] string, firstnode[] float64, secondnode[] float64, n int){
+	count:=0
+	flag:=0
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan(){
+		linea:=scanner.Text()
+		if flag==0{
+			if strings.HasPrefix(linea, "NODE_COORD_SECTION") {
+				flag++
+			}
+
+			if strings.HasPrefix(linea, "DISPLAY_DATA_SECTION") {
+				flag++
+			}
+		} else{
+			if strings.HasPrefix(linea, "EOF") {
+				break
+			}
+
+			if(count<len(firstnode)){
+				aux := strings.Fields(linea)
+				//fmt.Println("La línea de datos es ",aux)
+				numbernode[count]=aux[0]
+				firstnode[count],_=strconv.ParseFloat(aux[1], 32)
+				secondnode[count],_=strconv.ParseFloat(aux[2], 32)
+				/*fmt.Println("El número de ciudad es ", numbernode[count])
+				fmt.Println("El primer nodo es ",firstnode[count])
+				fmt.Println("El segundo nodo es ",secondnode[count])*/
+			}
+			count++
+		}
+	}	
 }
 
 func ReadFileInferior(file *os.File, matriz [][]int, n int) {
@@ -920,7 +948,6 @@ func ReadExplicit(file *os.File, data [][]int, n int) error {
 
     return nil
 }
-
 
 func ProblemaExplicit(file *os.File, n int) {
     data := make([][]int, n)
