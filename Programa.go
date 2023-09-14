@@ -59,7 +59,7 @@ func main() {
 				fmt.Println("El tipo de problema es: "+typeDistance)
                 switch typeDistance {
                 case "Euclidiana":
-                    ProblemaEuclidiano(file, n)
+                    ProblemaEuclidiano(filepath.Join(folder, fileInfo.Name()), n)
                 case "Geografica":
                     ProblemaGeografico(file, n)
                 case "Circular":
@@ -468,12 +468,18 @@ func DistanciaEuclidiana(nodes []string, x, y []int) int {
 	return distance
 }
 
-func ProblemaEuclidiano(file *os.File, n int) {
+func ProblemaEuclidiano(fileName string, n int) {
+	file, err := os.Open(fileName)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return
+    }
+    defer file.Close()
 	numbernode := make([]string, n)
 	firstnode := make([]int, n)
 	secondnode := make([]int, n)
 
-	err := ReadFileEuclidiana(file, numbernode, firstnode, secondnode)
+	ReadFileEuclidiana(file, numbernode, firstnode, secondnode)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
@@ -689,6 +695,8 @@ func ReadFileSuperior(file *os.File, matriz [][]int, numbernode int) {
 	}
 }
 
+// The function calculates the shortest distance between nodes in a matrix using the nearest neighbor
+// algorithm.
 func distanciaMATRIX(matrix [][]int, n int) {
 	visitados := make([]int, n)
 	ruta := make([]int, n)
@@ -731,7 +739,7 @@ func distanciaMATRIX(matrix [][]int, n int) {
 	}
 
 	distanciaActual = matrix[posActual][0]
-	fmt.Println("La distancia actual es: ",distanciaActual)
+	//fmt.Println("La distancia actual es: ",distanciaActual)
 	ruta[n-1] = 0
 	ruta[0] = posActual
 
@@ -776,6 +784,9 @@ func ProblemaSuperior(fileName string, n int) {
 	distanciaMATRIX(matriz, n)
 }
 
+// The function "ProblemaInferior" reads a matrix from a file, prints the lower triangular part of the
+// matrix, completes the matrix, prints the complete matrix, and calculates the distance between each
+// pair of elements in the matrix.
 func ProblemaInferior(fileName string, n int) {
 	file, err := os.Open(fileName)
     if err != nil {
@@ -791,16 +802,15 @@ func ProblemaInferior(fileName string, n int) {
 
 	ReadFileInferior(file,matriz,n)
 
-	fmt.Println("Matriz Inferior:")
-	ImprimirMatriz(matriz, n)
+	/*fmt.Println("Matriz Inferior:")
+	ImprimirMatriz(matriz, n)*/
 
-	fmt.Println("Matriz Completa:")
-	ImprimirMatriz(matriz, n)
-	
 	EscribirMatrizEnCSV("./Files/Excel/LeerMatriz.csv",matriz)	
 
 	//Se completa la matriz
 	CompletarMatriz(matriz, n)
+	/*fmt.Println("Matriz Completa:")
+	ImprimirMatriz(matriz, n)*/
 
 	EscribirMatrizEnCSV("./Files/Excel/MatrizCompleta.csv",matriz)	
 
