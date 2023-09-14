@@ -232,7 +232,6 @@ func EscribirMatrizEnCSV(nombreArchivo string, matriz [][]int) {
 	}
 }
 
-
 func ReadFileATT(file *os.File, numbernode []string, firstnode, secondnode []int) error {
 	count := 0
 	flag := 0
@@ -695,8 +694,8 @@ func distanciaMATRIX(matrix [][]int, n int) {
 	ruta := make([]int, n)
 	mejorRuta := make([]int, n)
 	mejorDistancia := math.MaxInt
-
-	var distanciaActual, element, posActual int
+	distanciaActual:=0
+	element:=-1
 
 	for i := 0; i < n; i++ {
 		visitados[i] = 0
@@ -705,9 +704,9 @@ func distanciaMATRIX(matrix [][]int, n int) {
 
 	visitados[0] = 1
 	ruta[0] = 0
-	posActual = 0
+	posActual:= 0
 
-	for {
+	for true{
 		element = -1
 
 		for i := 0; i < n; i++ {
@@ -732,6 +731,7 @@ func distanciaMATRIX(matrix [][]int, n int) {
 	}
 
 	distanciaActual = matrix[posActual][0]
+	fmt.Println("La distancia actual es: ",distanciaActual)
 	ruta[n-1] = 0
 	ruta[0] = posActual
 
@@ -743,10 +743,12 @@ func distanciaMATRIX(matrix [][]int, n int) {
 
 	if distanciaActual < mejorDistancia {
 		mejorDistancia = distanciaActual
-		copy(mejorRuta, ruta)
+		for i:=0; i < n; i++{
+			mejorRuta[i]=ruta[i]
+		}
 	}
 
-	fmt.Println("La distancia total es:", mejorDistancia)
+	fmt.Println("La distancia total es: ", mejorDistancia)
 }
 
 func ProblemaSuperior(fileName string, n int) {
@@ -794,8 +796,13 @@ func ProblemaInferior(fileName string, n int) {
 
 	fmt.Println("Matriz Completa:")
 	ImprimirMatriz(matriz, n)
+	
+	EscribirMatrizEnCSV("./Files/Excel/LeerMatriz.csv",matriz)	
 
-	EscribirMatrizEnCSV("test.csv",matriz)	
+	//Se completa la matriz
+	CompletarMatriz(matriz, n)
+
+	EscribirMatrizEnCSV("./Files/Excel/MatrizCompleta.csv",matriz)	
 
 	distanciaMATRIX(matriz, n)
 }
