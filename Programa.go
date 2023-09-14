@@ -65,7 +65,7 @@ func main() {
                 case "Circular":
                     ProblemaCeil(file, n)
                 case "ATT":
-                    ProblemaATT(file, n)
+                    ProblemaATT(filepath.Join(folder, fileInfo.Name()), n)
                 case "DiagonalSuperior":
                     ProblemaSuperior(filepath.Join(folder, fileInfo.Name()), n)
                 case "DiagonalInferior":
@@ -287,12 +287,18 @@ func DistanciaATT(numbernode []string, x, y []int) int {
 	return dij
 }
 
-func ProblemaATT(file *os.File, n int) {
+func ProblemaATT(fileName string, n int) {
+	file, err := os.Open(fileName)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return
+    }
+    defer file.Close()
 	numbernode := make([]string, n)
 	firstnode := make([]int, n)
 	secondnode := make([]int, n)
 
-	err := ReadFileATT(file, numbernode, firstnode, secondnode)
+	ReadFileATT(file, numbernode, firstnode, secondnode)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
