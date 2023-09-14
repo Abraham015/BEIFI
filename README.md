@@ -14,3 +14,9 @@ Rama creada para realizar el proyecto en Golang
 
 >13-09-2023
 1. Se repara la función para leer la matriz inferior
+
+>14-09-2023
+1. Se completa con exito las funciones para diagonal inferior
+2. Se hacen pruebas y se confirma el funcionamiento para problemas euclidianos
+3. Se hacen pruebas y se confirma el funcionamiento para problemas ATT
+4. Se hacen pruebas y se confirma el funcionamiento para problemad de tipo Geografico

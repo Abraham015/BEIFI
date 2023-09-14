@@ -483,7 +483,7 @@ func ProblemaEuclidiano(fileName string, n int) {
 
 func DistanciaGeografica(numbernode []string, x, y []float64) int {
 	distance:=0
-	var q1, q2, q3 float64
+	var q1, q2, q3 	
 	RRR := 6378.388 // Radio de la Tierra en km
 	pi :=  3.141592
 
