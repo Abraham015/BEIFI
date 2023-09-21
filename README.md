@@ -25,3 +25,6 @@ Rama creada para realizar el proyecto en Golang
 1. Se comienza a trabajar en los problemas de ceil
 2. Se confirma el funcionamiento de los problemas ceil
 3. Se comienza a trabajar en los problemas de diagonal superior
+4. Se terminan los problemas de diagonal superior
+5. Se comienzan con los problemas de ATSP
+6. Se terminan los problemas de ATSP

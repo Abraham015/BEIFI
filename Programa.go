@@ -51,7 +51,7 @@ func main() {
                 typeDistance = TypeDistanceATSP(file)
                 switch typeDistance {
                 case "Explicita":
-                    ProblemaExplicit(file, n)
+                    ProblemaExplicit(filepath.Join(folder, fileInfo.Name()), n)
                 }
             } else {
                 file.Seek(0, 0) // Asegura que el archivo esté al principio antes de abrirlo nuevamente
@@ -785,7 +785,7 @@ func ProblemaInferior(fileName string, n int) {
 
 func SolveATSP(distances [][]int, numCities int, tour []int) int {
 	visited := make([]bool, numCities)
-	startCity := 0 // Puedes elegir cualquier ciudad como punto de inicio
+	startCity := 0 
 
 	tour = append(tour, startCity)
 	visited[startCity] = true
@@ -821,79 +821,73 @@ func findNearestNeighbor(city int, visited []bool, distances [][]int) int {
 	return nearestNeighbor
 }
 
-func ReadExplicit(file *os.File, data [][]int, n int) error {
-    reader := bufio.NewReader(file)
+func ReadExplicit(file *os.File, data [][]int, n int) {
+	scanner := bufio.NewScanner(file)
+	for i := 0; i < 7; i++ {
+		if !scanner.Scan() {
+			fmt.Println("Error: no se encontraron suficientes líneas en el archivo")
+			return
+		}
+	}
 
-    // Ignorar las primeras 7 líneas del archivo
-    for i := 0; i < 7; i++ {
-        _, err := reader.ReadString('\n')
-        if err != nil {
-            return err
-        }
-    }
+	// Variables para rastrear la fila y columna
+	row := 0
+	col := 0
 
-    row := 0
-    col := 0
-    for {
-        line, err := reader.ReadString('\n')
-        if err != nil {
-            if err == io.EOF {
-                break
-            }
-            return err
-        }
+	// Bucle principal para leer el archivo
+	for scanner.Scan() {
+		lineaActual := scanner.Text()
+		if lineaActual != "EOF" && row < n {
+			linea := strings.Fields(lineaActual)
+			for _, valorStr := range linea {
+				//fmt.Println(valorStr)
+				valor, err := strconv.Atoi(valorStr)
+				if err != nil {
+					fmt.Println("Error al convertir el valor:", err)
+					return
+				}
+				if valor ==9999999{
+					row++
+					col=0
+				}else if valor == 9999 {
+					row++
+					col = 0
+				} else {
+					if col < n{
+						data[row][col] = valor
+						col++
+					}
+				}
+				if row == n {
+					break
+				}
+			}
+			if row == n {
+				break
+			}
+		}
+	}
 
-        line = strings.TrimSpace(line)
-        if line == "EOF" {
-            break
-        }
-
-        values := strings.Fields(line)
-        for _, valueStr := range values {
-            value, err := strconv.Atoi(valueStr)
-            if err != nil {
-                return err
-            }
-
-            if value == 9999 {
-                // Saltar al siguiente elemento de la siguiente fila
-                row++
-                col = 0
-            } else {
-                data[row][col] = value
-                col++
-            }
-
-            // Comprobar si hemos llenado completamente la matriz
-            if row == n {
-                break
-            }
-        }
-
-        // Comprobar si hemos llenado completamente la matriz
-        if row == n {
-            break
-        }
-    }
-
-    // Rellenar con ceros si la matriz no se ha llenado completamente
-    for row < n {
-        for col = 0; col < n; col++ {
-            data[row][col] = 0
-        }
-        row++
-    }
-
-    return nil
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error al leer el archivo:", err)
+	}
 }
 
-func ProblemaExplicit(file *os.File, n int) {
+
+func ProblemaExplicit(fileName string, n int) {
+	file, err := os.Open(fileName)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return
+    }
+    defer file.Close()
     data := make([][]int, n)
     for i := range data {
         data[i] = make([]int, n)
     }
 
-    err := ReadExplicit(file, data, n)
+    ReadExplicit(file, data, n)
+
     if err != nil {
         fmt.Println("Error:", err)
         return
@@ -902,11 +896,7 @@ func ProblemaExplicit(file *os.File, n int) {
     var tour []int
     totalDistance := SolveATSP(data, n, tour)
 
-    fmt.Println("Recorrido óptimo:")
-    for _, city := range tour {
-        fmt.Printf("%d -> ", city)
-    }
-    fmt.Println("0")
+    //fmt.Println("0")
 
     fmt.Println("Distancia total recorrida:", totalDistance)
 }
