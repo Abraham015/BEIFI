@@ -63,7 +63,7 @@ func main() {
                 case "Geografica":
                     ProblemaGeografico(filepath.Join(folder, fileInfo.Name()), n)
                 case "Circular":
-                    ProblemaCeil(file, n)
+                    ProblemaCeil(filepath.Join(folder, fileInfo.Name()), n)
                 case "ATT":
                     ProblemaATT(filepath.Join(folder, fileInfo.Name()), n)
                 case "DiagonalSuperior":
@@ -307,45 +307,35 @@ func ProblemaATT(fileName string, n int) {
 	fmt.Println("La distancia total para este archivo es de", DistanciaATT(numbernode, firstnode, secondnode))
 }
 
-func ReadFileCeil(file *os.File, numbernode []string, firstnode, secondnode []float64) error {
-	count := 0
-	flag := 0
+func ReadFileCeil(file *os.File, numbernode []string, firstnode, secondnode []float64) {
+	count:=0
+	flag:=0
 
-	reader := bufio.NewReader(file)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			return err
-		}
-
-		if flag == 0 {
-			if strings.TrimSpace(line) == "NODE_COORD_SECTION" || strings.TrimSpace(line) == "NODE_COORD_SECTION " {
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan(){
+		linea:=scanner.Text()
+		if flag==0{
+			if strings.HasPrefix(linea, "NODE_COORD_SECTION") {
 				flag++
 			}
-			if strings.TrimSpace(line) == "DISPLAY_DATA_SECTION" {
+
+			if strings.HasPrefix(linea, "DISPLAY_DATA_SECTION") {
 				flag++
 			}
-		} else {
-			if strings.TrimSpace(line) == "EOF" {
-				continue
-			} else {
-				if count < len(numbernode) {
-					aux := strings.TrimSpace(line)
-					datos := strings.Fields(aux)
-					numbernode[count] = datos[0]
-					firstnode[count], _ = strconv.ParseFloat(datos[1], 64)
-					secondnode[count], _ = strconv.ParseFloat(datos[2], 64)
-				}
-				count++
+		} else{
+			if strings.HasPrefix(linea, "EOF") {
+				break
 			}
-		}
 
-		if err == io.EOF {
-			break
+			if(count<len(firstnode)){
+				aux := strings.Fields(linea)
+				numbernode[count]=aux[0]
+				firstnode[count],_=strconv.ParseFloat(aux[1], 32)
+				secondnode[count],_=strconv.ParseFloat(aux[2], 32)
+			}
+			count++
 		}
-	}
-
-	return nil
+	}	
 }
 
 func DistanciaCeil(nodes []string, x, y []float64) int {
@@ -365,16 +355,18 @@ func DistanciaCeil(nodes []string, x, y []float64) int {
 	return distance
 }
 
-func ProblemaCeil(file *os.File, n int) {
+func ProblemaCeil(fileName string, n int) {
+	file, err := os.Open(fileName)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return
+    }
+    defer file.Close()
 	numbernode := make([]string, n)
 	firstnode := make([]float64, n)
 	secondnode := make([]float64, n)
 
-	err := ReadFileCeil(file, numbernode, firstnode, secondnode)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
+	ReadFileCeil(file, numbernode, firstnode, secondnode)
 
 	fmt.Println("La distancia total para este archivo es de", DistanciaCeil(numbernode, firstnode, secondnode))
 }
@@ -483,7 +475,7 @@ func ProblemaEuclidiano(fileName string, n int) {
 
 func DistanciaGeografica(numbernode []string, x, y []float64) int {
 	distance:=0
-	var q1, q2, q3 	
+	var q1, q2, q3 float64
 	RRR := 6378.388 // Radio de la Tierra en km
 	pi :=  3.141592
 
@@ -549,13 +541,9 @@ func ReadFileGeografico(file *os.File, numbernode[] string, firstnode[] float64,
 
 			if(count<len(firstnode)){
 				aux := strings.Fields(linea)
-				//fmt.Println("La línea de datos es ",aux)
 				numbernode[count]=aux[0]
 				firstnode[count],_=strconv.ParseFloat(aux[1], 32)
 				secondnode[count],_=strconv.ParseFloat(aux[2], 32)
-				/*fmt.Println("El número de ciudad es ", numbernode[count])
-				fmt.Println("El primer nodo es ",firstnode[count])
-				fmt.Println("El segundo nodo es ",secondnode[count])*/
 			}
 			count++
 		}
@@ -638,64 +626,6 @@ func ReadFileInferior(file *os.File, matriz [][]int, n int) {
 		fmt.Println("Error al leer el archivo:", err)
 		return
 	}
-
-	/*scanner := bufio.NewScanner(file)
-
-    // Variables para rastrear la fila y la columna en la matriz
-    fila := 0
-    columna := 0
-
-    // Variable para determinar si debemos continuar en la misma fila
-    continuarEnLaMismaFila := false
-
-    // Variable para almacenar la línea anterior
-    lineaAnterior := ""
-
-    for scanner.Scan() {
-        linea := scanner.Text()
-
-        if linea == "EOF" {
-            break
-        }
-
-        // Dividir la línea en valores
-        valoresStr := strings.Fields(linea)
-
-        for _, valorStr := range valoresStr {
-            valor, err := strconv.Atoi(valorStr)
-            if err != nil {
-                fmt.Println("Error al convertir el valor:", err)
-                return
-            }
-
-            // Si encontramos un cero, llenamos la fila con ceros y avanzamos a la siguiente fila
-            if valor == 0 {
-                continuarEnLaMismaFila = false
-                fila++ // Avanzar a la siguiente fila
-                columna = 0 // Reiniciar la columna
-            } else {
-                // Almacenar el valor en la matriz
-                matriz[fila][columna] = valor
-                columna++
-                continuarEnLaMismaFila = true
-            }
-
-            // Comprobar si debemos continuar en la misma fila
-            if continuarEnLaMismaFila {
-                // Si la fila anterior tenía valores, llenar con ceros la parte inferior
-                if len(valoresStr) < n {
-                    valoresAnterior := strings.Fields(lineaAnterior)
-                    for columna < n && len(valoresAnterior) > columna {
-                        matriz[fila][columna] = 0
-                        columna++
-                    }
-                }
-            }
-        }
-
-        // Almacenar la línea actual como línea anterior
-        lineaAnterior = linea
-    }*/
 }
 
 func ReadFileSuperior(file *os.File, matriz [][]int, numbernode int) {
@@ -703,25 +633,29 @@ func ReadFileSuperior(file *os.File, matriz [][]int, numbernode int) {
 
 	// Variables para rastrear la fila
 	fila := 0
+	i:=0
 
 	// Bucle principal para leer el archivo
 	for scanner.Scan() {
 		lineaActual := scanner.Text()
-		lineaActual = strings.TrimSpace(lineaActual)
 
 		if fila >= 8 && lineaActual != "EOF" {
 			linea := strings.Fields(lineaActual)
-			for columna, valorStr := range linea {
-				valor, err := strconv.Atoi(valorStr)
-				if err != nil {
-					fmt.Println("Error al convertir el valor:", err)
-					return
+			if i<len(matriz){
+				for columna, valorStr := range linea {
+					valor, err := strconv.Atoi(valorStr)
+					if err != nil {
+						fmt.Println("Error al convertir el valor:", err)
+						return
+					}
+					matriz[fila-8][columna] = valor
 				}
-				matriz[fila-8][columna] = valor
 			}
+
 		}
 
 		fila++
+		i++
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -806,14 +740,12 @@ func ProblemaSuperior(fileName string, n int) {
 		matriz[i] = make([]int, n)
 	}
 
-	fmt.Println("Entra a esta funcion de superior")
-
 	ReadFileSuperior(file, matriz, n)	
 
 	fmt.Println("Matriz Superior:")
-	ImprimirMatriz(matriz, n)
+	//ImprimirMatriz(matriz, n)
 
-	EscribirMatrizEnCSV("test.csv",matriz)	
+	EscribirMatrizEnCSV("./Files/Excel/superior.csv",matriz)	
 
 	distanciaMATRIX(matriz, n)
 }

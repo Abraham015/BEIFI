@@ -20,3 +20,8 @@ Rama creada para realizar el proyecto en Golang
 2. Se hacen pruebas y se confirma el funcionamiento para problemas euclidianos
 3. Se hacen pruebas y se confirma el funcionamiento para problemas ATT
 4. Se hacen pruebas y se confirma el funcionamiento para problemad de tipo Geografico
+
+>21-09-2023
+1. Se comienza a trabajar en los problemas de ceil
+2. Se confirma el funcionamiento de los problemas ceil
+3. Se comienza a trabajar en los problemas de diagonal superior
