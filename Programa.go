@@ -627,36 +627,92 @@ func ReadFileInferior(file *os.File, matriz [][]int, n int) {
 	}
 }
 
-func ReadFileSuperior(file *os.File, matriz [][]int, numbernode int) {
+func ReadFileSuperior(file *os.File, matriz [][]int, n int) {
 	scanner := bufio.NewScanner(file)
-
-	// Variables para rastrear la fila
+	NoDisplay:=false
 	fila := 0
-	i:=0
-	
-	// Bucle principal para leer el archivo
+	leyendoMatriz := false
+	columna:=0
+	// Encuentra la línea "EDGE_WEIGHT_SECTION"
 	for scanner.Scan() {
 		lineaActual := scanner.Text()
+		if strings.HasPrefix(lineaActual, "DISPLAY_DATA_TYPE: NO_DISPLAY"){
+			NoDisplay=true
+		}
+		if lineaActual == "EDGE_WEIGHT_SECTION" {
+			leyendoMatriz = true
+			break
+		}
+	}
 
-		if fila >= 7 && lineaActual != "EOF" {
-			linea := strings.Fields(lineaActual)
+	if NoDisplay{
+		for scanner.Scan() {
+			lineaActual := scanner.Text()
+			if leyendoMatriz && lineaActual != "EOF" {
+				valoresStr := strings.Fields(lineaActual)
+					//fmt.Println(valoresStr)
+					for _, valorStr := range valoresStr {
+						valor, err := strconv.Atoi(valorStr)
+						if err != nil {
+							fmt.Println("Error al convertir el valor:", err)
+							return
+						}
+			
+						if valor == 0 {
+							if columna < n{
+								for columna < n{
+									if columna<n{
+										matriz[fila][columna]=0
+										columna++
+									}else{
+										break
+									}
+								}
+							}
+						} else {
+							if columna < n{
+								matriz[fila][columna]=valor
+								columna++
+							}
+						}
+
+						if columna == n{
+							fila++
+							columna=0
+						}
+
+						if fila==n{
+							break
+						}
+					}
+					if fila >= n {
+						break
+					}
+			}
+		}
+	}else{
+		for scanner.Scan() {
+			lineaActual := scanner.Text()
+			if leyendoMatriz && lineaActual != "EOF" {
+				linea := strings.Fields(lineaActual)
 				for columna, valorStr := range linea {
 					valor, err := strconv.Atoi(valorStr)
 					if err != nil {
 						fmt.Println("Error al convertir el valor:", err)
 						return
 					}
-					matriz[fila-7][columna] = valor
+					matriz[fila][columna] = valor
 				}
+			}
+			fila++
 		}
-		fila++
-		i++
 	}
 
 	if err := scanner.Err(); err != nil {
 		fmt.Println("Error al leer el archivo:", err)
 	}
 }
+
 
 // The function calculates the shortest distance between nodes in a matrix using the nearest neighbor
 // algorithm.
@@ -737,7 +793,7 @@ func ProblemaSuperior(fileName string, n int) {
 
 	ReadFileSuperior(file, matriz, n)	
 
-	fmt.Println("Matriz Superior:")
+	//fmt.Println("Matriz Superior:")
 	//ImprimirMatriz(matriz, n)
 	EscribirMatrizEnCSV("./Files/Excel/"+fileName[6:11]+".csv",matriz)	
 
@@ -762,17 +818,10 @@ func ProblemaInferior(fileName string, n int) {
 
 	ReadFileInferior(file,matriz,n)
 
-	/*fmt.Println("Matriz Inferior:")
-	ImprimirMatriz(matriz, n)*/
-
-	EscribirMatrizEnCSV("./Files/Excel/LeerMatriz.csv",matriz)	
-
 	//Se completa la matriz
 	CompletarMatriz(matriz, n)
-	/*fmt.Println("Matriz Completa:")
-	ImprimirMatriz(matriz, n)*/
 
-	EscribirMatrizEnCSV("./Files/Excel/MatrizCompleta.csv",matriz)	
+	EscribirMatrizEnCSV("./Files/Excel/"+fileName[6:10]+".csv",matriz)	
 
 	distanciaMATRIX(matriz, n)
 }
