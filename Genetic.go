@@ -68,7 +68,7 @@ func main() {
 				bestIndividual = individual
 			}
 		}
-
+		
 		// Imprimir la mejor distancia en esta generación
 		fmt.Printf("Generación %d - Mejor Distancia: %.2f\n", generation, bestIndividual.Fitness)
 
@@ -93,10 +93,17 @@ func main() {
 	}
 
 	// Encontrar el mejor individuo después de todas las generaciones
+	for i := range population {
+		population[i].Fitness = calculateTotalDistance(population[i], distances)
+	}
 	bestIndividual := population[0]
 	for _, individual := range population {
+		//fmt.Println(individual.Fitness)
 		if individual.Fitness < bestIndividual.Fitness {
-			bestIndividual = individual
+			if individual.Fitness > 0{
+				bestIndividual = individual
+			}
+			
 		}
 	}
 

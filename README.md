@@ -7,3 +7,6 @@ Rama creada para la generación del algoritmo genetico para el problema del viaj
 
 >17-10-2023
 1. Se genera el primer algoritmo genetico, tomando unas ciudades como ejemplo
+
+>19-10-2023
+1. Cambio en la generacion final
