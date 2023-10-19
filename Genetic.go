@@ -3,101 +3,146 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"sort"
 	"time"
 )
 
 type Individual struct {
 	Chromosome []int
-	Fitness    int
+	Fitness    float64
 }
 
 func generateRandomIndividual(numCities int) Individual {
 	chromosome := rand.Perm(numCities)
-	return Individual{Chromosome: chromosome, Fitness: 0}
+	return Individual{Chromosome: chromosome}
 }
 
-func calculateDistance(city1, city2 [2]int) float64 {
-	return float64((city1[0]-city2[0])*(city1[0]-city2[0]) + (city1[1]-city2[1])*(city1[1]-city2[1]))
-}
-
-func calculateFitness(individual Individual, cities [][2]int) int {
+func calculateTotalDistance(individual Individual, distances [][]float64) float64 {
 	totalDistance := 0.0
 	for i := 0; i < len(individual.Chromosome)-1; i++ {
-		city1 := cities[individual.Chromosome[i]]
-		city2 := cities[individual.Chromosome[i+1]]
-		totalDistance += calculateDistance(city1, city2)
+		fromCity := individual.Chromosome[i]
+		toCity := individual.Chromosome[i+1]
+		totalDistance += distances[fromCity][toCity]
 	}
 	// Agregar la distancia de vuelta a la primera ciudad
-	firstCity := cities[individual.Chromosome[0]]
-	lastCity := cities[individual.Chromosome[len(individual.Chromosome)-1]]
-	totalDistance += calculateDistance(lastCity, firstCity)
-	return int(totalDistance)
-}
-
-func crossover(parent1, parent2 Individual) Individual {
-	crossoverPoint := rand.Intn(len(parent1.Chromosome))
-	childChromosome := append(parent1.Chromosome[:crossoverPoint], parent2.Chromosome[crossoverPoint:]...)
-	child := Individual{Chromosome: childChromosome, Fitness: 0}
-	return child
-}
-
-func mutate(individual Individual) Individual {
-	index1 := rand.Intn(len(individual.Chromosome))
-	index2 := rand.Intn(len(individual.Chromosome))
-	individual.Chromosome[index1], individual.Chromosome[index2] = individual.Chromosome[index2], individual.Chromosome[index1]
-	return individual
-}
-
-func geneticAlgorithm(cities [][2]int, populationSize, generations int) Individual {
-	rand.Seed(time.Now().UnixNano())
-
-	// Inicializar la población
-	population := make([]Individual, populationSize)
-	for i := range population {
-		population[i] = generateRandomIndividual(len(cities))
-	}
-
-	// Evolucionar la población
-	for generation := 0; generation < generations; generation++ {
-		// Calcular la aptitud de cada individuo en la población
-		for i := range population {
-			population[i].Fitness = calculateFitness(population[i], cities)
-		}
-
-		// Ordenar la población por aptitud (menor distancia es mejor)
-		sort.Slice(population, func(i, j int) bool {
-			return population[i].Fitness < population[j].Fitness
-		})
-
-		// Seleccionar padres para la reproducción (torneo)
-		parent1 := population[rand.Intn(populationSize/2)]
-		parent2 := population[rand.Intn(populationSize/2)]
-
-		// Realizar cruce y mutación para crear nuevos individuos
-		child := crossover(parent1, parent2)
-		child = mutate(child)
-
-		// Reemplazar el peor individuo con el nuevo hijo
-		population[populationSize-1] = child
-	}
-
-	// Ordenar la población una última vez antes de devolver el mejor individuo
-	sort.Slice(population, func(i, j int) bool {
-		return population[i].Fitness < population[j].Fitness
-	})
-
-	return population[0]
+	totalDistance += distances[individual.Chromosome[len(individual.Chromosome)-1]][individual.Chromosome[0]]
+	return totalDistance
 }
 
 func main() {
-	// Definir las ciudades como coordenadas (x, y)
-	cities := [][2]int{{0, 0}, {1, 2}, {3, 1}, {5, 2}, {6, 0}}
+	rand.Seed(time.Now().UnixNano())
 
-	populationSize := 100
-	generations := 1000
+	// Definir distancias entre ciudades (en este ejemplo, distancias aleatorias)
+	numCities := 100
+	distances := make([][]float64, numCities)
+	for i := range distances {
+		distances[i] = make([]float64, numCities)
+		for j := range distances[i] {
+			if i != j {
+				distances[i][j] = float64(rand.Intn(100)) // Distancias aleatorias entre 0 y 99
+			}
+		}
+	}
 
-	bestSolution := geneticAlgorithm(cities, populationSize, generations)
-	fmt.Printf("Mejor ruta encontrada: %v\n", bestSolution.Chromosome)
-	fmt.Printf("Distancia total: %d\n", bestSolution.Fitness)
+	// Configuración del algoritmo genético
+	populationSize := 1000
+	numGenerations := 100
+	mutationRate := 0.01
+
+	// Inicializar población aleatoria
+	population := make([]Individual, populationSize)
+	for i := range population {
+		population[i] = generateRandomIndividual(numCities)
+	}
+
+	// Evolución de la población
+	for generation := 0; generation < numGenerations; generation++ {
+		// Calcular fitness de la población
+		for i := range population {
+			population[i].Fitness = calculateTotalDistance(population[i], distances)
+		}
+
+		// Encontrar el mejor individuo (el de menor distancia)
+		bestIndividual := population[0]
+		for _, individual := range population {
+			if individual.Fitness < bestIndividual.Fitness {
+				bestIndividual = individual
+			}
+		}
+
+		// Imprimir la mejor distancia en esta generación
+		fmt.Printf("Generación %d - Mejor Distancia: %.2f\n", generation, bestIndividual.Fitness)
+
+		// Seleccionar padres y realizar cruzamiento
+		newPopulation := make([]Individual, populationSize)
+		for i := range population {
+			parent1 := selectParent(population)
+			parent2 := selectParent(population)
+			child := crossover(parent1, parent2)
+			newPopulation[i] = child
+		}
+
+		// Aplicar mutaciones
+		for i := range newPopulation {
+			if rand.Float64() < mutationRate {
+				mutate(newPopulation[i])
+			}
+		}
+
+		// Reemplazar la antigua población con la nueva generación
+		population = newPopulation
+	}
+
+	// Encontrar el mejor individuo después de todas las generaciones
+	bestIndividual := population[0]
+	for _, individual := range population {
+		if individual.Fitness < bestIndividual.Fitness {
+			bestIndividual = individual
+		}
+	}
+
+	// Imprimir la mejor distancia encontrada y el orden de las ciudades
+	fmt.Printf("Mejor Distancia Final: %.2f\n", bestIndividual.Fitness)
+	fmt.Println("Orden de las Ciudades:", bestIndividual.Chromosome)
+}
+
+func selectParent(population []Individual) Individual {
+	// Método de selección: selección por torneo
+	tournamentSize := 5
+	tournament := make([]Individual, tournamentSize)
+	for i := 0; i < tournamentSize; i++ {
+		tournament[i] = population[rand.Intn(len(population))]
+	}
+	bestIndividual := tournament[0]
+	for _, individual := range tournament {
+		if individual.Fitness < bestIndividual.Fitness {
+			bestIndividual = individual
+		}
+	}
+	return bestIndividual
+}
+
+func crossover(parent1, parent2 Individual) Individual {
+	// Cruzamiento de un punto
+	crossoverPoint := rand.Intn(len(parent1.Chromosome))
+	childChromosome := make([]int, len(parent1.Chromosome))
+	copy(childChromosome, parent1.Chromosome[:crossoverPoint])
+	usedCities := make(map[int]bool)
+	for _, city := range childChromosome {
+		usedCities[city] = true
+	}
+	childIndex := crossoverPoint
+	for _, city := range parent2.Chromosome {
+		if !usedCities[city] {
+			childChromosome[childIndex] = city
+			childIndex++
+		}
+	}
+	return Individual{Chromosome: childChromosome}
+}
+
+func mutate(individual Individual) {
+	// Mutación de intercambio
+	index1 := rand.Intn(len(individual.Chromosome))
+	index2 := rand.Intn(len(individual.Chromosome))
+	individual.Chromosome[index1], individual.Chromosome[index2] = individual.Chromosome[index2], individual.Chromosome[index1]
 }
