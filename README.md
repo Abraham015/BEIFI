@@ -10,3 +10,6 @@ Rama creada para la generación del algoritmo genetico para el problema del viaj
 
 >19-10-2023
 1. Cambio en la generacion final
+
+>25-10-2023
+1. Se realiza la primera versión del algoritmo genetico combinando el programa anterior.
