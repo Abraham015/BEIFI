@@ -232,11 +232,11 @@ func mutate(individual Individual) {
 	individual.Chromosome[index1], individual.Chromosome[index2] = individual.Chromosome[index2], individual.Chromosome[index1]
 }
 
-func DistanciaEuclidiana(x []int, y []int) int {
+func DistanciaEuclidiana(x []int, y []int, chromosome []int) int {
 	var x1, x2, y1, y2 int
 	distance := 0
 
-	for i := 0; i < len(y); i++ {
+	/*for i := 0; i < len(y); i++ {
 		if i < len(y)-1 {
 			x1 = x[i]
 			x2 = x[i+1]
@@ -244,6 +244,15 @@ func DistanciaEuclidiana(x []int, y []int) int {
 			y2 = y[i+1]
 			distance += int(math.Sqrt(math.Pow(float64(math.Abs(float64(y2-y1))), 2) + math.Pow(float64(math.Abs(float64(x2-x1))), 2)) + 0.5)
 		}
+	}*/
+
+	//Se debe recorrer el cromosoma 
+	for i:=0; i<len(chromosome)-1;i++{
+		x1 = x[chromosome[i]]
+		x2 = x[chromosome[i+1]]
+		y1 = y[chromosome[i]]
+		y2 = y[chromosome[i+1]]
+		distance += int(math.Sqrt(math.Pow(float64(math.Abs(float64(y2-y1))), 2) + math.Pow(float64(math.Abs(float64(x2-x1))), 2)) + 0.5)
 	}
 
 	return distance
@@ -262,13 +271,20 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	for i := range population {
 		population[i] = generateRandomIndividual(len(xdistances))
 	}
-
+	
 	// Evolución de la población
 	for generation := 0; generation < numGenerations; generation++ {
 		// Calcular fitness de la población
 		for i := range population {
-			population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances)
+			population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, population[i].Chromosome)
 		}
+
+		/*for i:=range population{
+			for j:=0; j<populationSize-1; i++{
+				fmt.Printf("%d ", population[i].Chromosome[j])
+			}
+			fmt.Printf("Fitness: %d\n",population[i].Fitness)
+		}*/
 
 		// Encontrar el mejor individuo (el de menor distancia)
 		bestIndividual := population[0]
@@ -279,7 +295,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 		}
 		
 		// Imprimir la mejor distancia en esta generación
-		//fmt.Printf("Generación %d - Mejor Distancia: %.2f\n", generation, bestIndividual.Fitness)
+		//fmt.Printf("Generación %d - Mejor Distancia: %d\n", generation, bestIndividual.Fitness)
 
 		// Seleccionar padres y realizar cruzamiento
 		newPopulation := make([]Individual, populationSize)
@@ -303,7 +319,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 
 	// Encontrar el mejor individuo después de todas las generaciones
 	for i := range population {
-		population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances)
+		population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, population[i].Chromosome)
 	}
 	bestIndividual := population[0]
 	for _, individual := range population {
