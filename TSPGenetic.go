@@ -68,7 +68,7 @@ func main() {
                 case "Euclidiana":
                     ProblemaEuclidiano(filepath.Join(folder, fileInfo.Name()), n)
                 case "Geografica":
-                    //ProblemaGeografico(filepath.Join(folder, fileInfo.Name()), n)
+                    ProblemaGeografico(filepath.Join(folder, fileInfo.Name()), n)
                 case "Circular":
                     //ProblemaCeil(filepath.Join(folder, fileInfo.Name()), n)
                 case "ATT":
@@ -420,4 +420,175 @@ func ProblemaEuclidiano(fileName string, n int) {
 	}
 
 	GeneticEuclideano(firstnode, secondnode)
+}
+
+func ReadFileGeografico(file *os.File, numbernode[] string, firstnode[] float64, secondnode[] float64, n int){
+	count:=0
+	flag:=0
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan(){
+		linea:=scanner.Text()
+		if flag==0{
+			if strings.HasPrefix(linea, "NODE_COORD_SECTION") {
+				flag++
+			}
+
+			if strings.HasPrefix(linea, "DISPLAY_DATA_SECTION") {
+				flag++
+			}
+		} else{
+			if strings.HasPrefix(linea, "EOF") {
+				break
+			}
+
+			if(count<len(firstnode)){
+				aux := strings.Fields(linea)
+				numbernode[count]=aux[0]
+				firstnode[count],_=strconv.ParseFloat(aux[1], 32)
+				secondnode[count],_=strconv.ParseFloat(aux[2], 32)
+			}
+			count++
+		}
+	}	
+}
+
+func DistanciaGeografica(x []float64, y []float64, chromosome []int) int {
+	distance:=0
+	var q1, q2, q3 float64
+	RRR := 6378.388 // Radio de la Tierra en km
+	pi :=  3.141592
+
+	latitude := make([]float64, len(x))
+	longitude := make([]float64, len(x))
+	for i:=0; i<len(chromosome)-1; i++{
+		deg := int(x[chromosome[i]] + 0.5)
+		min := x[chromosome[i]] - float64(deg)
+		latitude[i] = pi * (float64(deg) + 5.0*min/3.0) / 180.0
+		deg = int(y[chromosome[i]] + 0.5)
+		min = y[chromosome[i]] - float64(deg)
+		longitude[i] = pi * (float64(deg) + 5.0*min/3.0) / 180.0
+	}
+
+	for i:=0; i<len(x)-1; i++{
+		q1 = math.Cos(longitude[i] - longitude[i+1])
+		q2 = math.Cos(latitude[i] - latitude[i+1])
+		q3 = math.Cos(latitude[i] + latitude[i+1])
+		distance += int(RRR * math.Acos(0.5*((1.0+q1)*q2-(1.0-q1)*q3)) + 1.0)
+	}
+	/*for i := 0; i < len(numbernode); i++ {
+		deg := int(x[i] + 0.5)
+		min := x[i] - float64(deg)
+		latitude[i] = pi * (float64(deg) + 5.0*min/3.0) / 180.0
+		deg = int(y[i] + 0.5)
+		min = y[i] - float64(deg)
+		longitude[i] = pi * (float64(deg) + 5.0*min/3.0) / 180.0
+	}
+
+	for i := 0; i < len(numbernode); i++ {
+		if i < len(latitude)-1 {
+			q1 = math.Cos(longitude[i] - longitude[i+1])
+			q2 = math.Cos(latitude[i] - latitude[i+1])
+			q3 = math.Cos(latitude[i] + latitude[i+1])
+			distance += int(RRR * math.Acos(0.5*((1.0+q1)*q2-(1.0-q1)*q3)) + 1.0)
+		}
+	}*/
+
+	return distance
+}
+
+func GeneticGeografico(xdistances []float64, ydistances []float64) {
+	rand.Seed(time.Now().UnixNano())
+
+	// Configuración del algoritmo genético
+	populationSize := 100000
+	numGenerations := 100
+	mutationRate := 0.01
+
+	// Inicializar población aleatoria
+	population := make([]Individual, populationSize)
+	for i := range population {
+		population[i] = generateRandomIndividual(len(xdistances))
+	}
+	
+	// Evolución de la población
+	for generation := 0; generation < numGenerations; generation++ {
+		// Calcular fitness de la población
+		for i := range population {
+			population[i].Fitness = DistanciaGeografica(xdistances, ydistances, population[i].Chromosome)
+		}
+
+		/*for i:=range population{
+			for j:=0; j<populationSize-1; i++{
+				fmt.Printf("%d ", population[i].Chromosome[j])
+			}
+			fmt.Printf("Fitness: %d\n",population[i].Fitness)
+		}*/
+
+		// Encontrar el mejor individuo (el de menor distancia)
+		bestIndividual := population[0]
+		for _, individual := range population {
+			if individual.Fitness < bestIndividual.Fitness {
+				bestIndividual = individual
+			}
+		}
+		
+		// Imprimir la mejor distancia en esta generación
+		//fmt.Printf("Generación %d - Mejor Distancia: %d\n", generation, bestIndividual.Fitness)
+
+		// Seleccionar padres y realizar cruzamiento
+		newPopulation := make([]Individual, populationSize)
+		for i := range population {
+			parent1 := selectParent(population)
+			parent2 := selectParent(population)
+			child := crossover(parent1, parent2)
+			newPopulation[i] = child
+		}
+
+		// Aplicar mutaciones
+		for i := range newPopulation {
+			if rand.Float64() < mutationRate {
+				mutate(newPopulation[i])
+			}
+		}
+
+		// Reemplazar la antigua población con la nueva generación
+		population = newPopulation
+	}
+
+	// Encontrar el mejor individuo después de todas las generaciones
+	for i := range population {
+		population[i].Fitness = DistanciaGeografica(xdistances, ydistances, population[i].Chromosome)
+	}
+	bestIndividual := population[0]
+	for _, individual := range population {
+		//fmt.Println(individual.Fitness)
+		if individual.Fitness < bestIndividual.Fitness {
+			if individual.Fitness > 0{
+				bestIndividual = individual
+			}
+			
+		}
+	}
+
+	// Imprimir la mejor distancia encontrada y el orden de las ciudades
+	fmt.Printf("Mejor Distancia Final: %d\n", bestIndividual.Fitness)
+	//fmt.Println("Orden de las Ciudades:", bestIndividual.Chromosome)
+}
+
+func ProblemaGeografico(fileName string, n int) {
+	file, err := os.Open(fileName)
+    if err != nil {
+        fmt.Println("Error al abrir el archivo:", err)
+        return
+    }
+    defer file.Close()
+	numbernode := make([]string, n)
+	firstnode := make([]float64, n)
+	secondnode := make([]float64, n)
+
+	ReadFileGeografico(file, numbernode, firstnode, secondnode, n)
+
+	GeneticGeografico(firstnode, secondnode)
+	//fmt.Println("La distancia total para este archivo es de", DistanciaGeografica(numbernode, firstnode, secondnode))
 }
