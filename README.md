@@ -17,3 +17,8 @@ Rama creada para la generación del algoritmo genetico para el problema del viaj
 
 >30-10-2023
 1. Se genera el algoritmo genetico para el problema geografico
+
+>01-11-2023
+1. Se genera el algoritmo genetico para el problema Ceil
+2. Se genera el algoritmo genetico para el problema ATT
+3. Se colocan las estructuras para los problemas de tipo matrix y ATSP pero se tienen complicaciones.
