@@ -1202,24 +1202,26 @@ func ProblemaInferior(fileName string, n int) {
 func SolveATSP(distances [][]int, numCities int, tour []int, chromosome []int) int {
 	visited := make([]bool, numCities)
 	startCity := 0 
-
+	fmt.Println("Entra a la funcion de la distancia")
 	tour = append(tour, startCity)
 	visited[startCity] = true
 	totalDistance := 0
 
 	// Construir el recorrido visitando el vecino más cercano disponible
 	for i := 0; i < numCities; i++ {
-		currentCity := tour[chromosome[i]]
+		currentCity := tour[i]
 		nextCity := findNearestNeighbor(currentCity, visited, distances)
 		tour = append(tour, nextCity)
+		
+		fmt.Println("La ciudad es ", nextCity)
 		visited[nextCity] = true
 		totalDistance += distances[currentCity][nextCity]
+		fmt.Println("Iteracion numero ", i)
 	}
 
 	// Regresar al punto de inicio para completar el ciclo
 	tour = append(tour, startCity)
 	totalDistance += distances[tour[numCities-1]][startCity]
-
 	return totalDistance
 }
 
@@ -1293,7 +1295,7 @@ func GeneticATSP(distances [][]int, numCities int, tour []int) {
 	rand.Seed(time.Now().UnixNano())
 
 	// Configuración del algoritmo genético
-	populationSize := 1000
+	populationSize := 5
 	numGenerations := 100
 	mutationRate := 0.01
 
@@ -1302,10 +1304,12 @@ func GeneticATSP(distances [][]int, numCities int, tour []int) {
 	for i := range population {
 		population[i] = generateRandomIndividual(numCities)
 	}
-	
+	fmt.Println(population)
 	// Evolución de la población
 	for generation := 0; generation < numGenerations; generation++ {
+		fmt.Println("La generacion es: %d", generation)
 		// Calcular fitness de la población
+		
 		for i := range population {
 			population[i].Fitness = SolveATSP(distances, numCities, tour,  population[i].Chromosome)
 		}
