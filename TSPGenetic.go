@@ -1017,7 +1017,7 @@ func ReadFileSuperior(file *os.File, matriz [][]int, n int) {
 
 // The function calculates the shortest distance between nodes in a matrix using the nearest neighbor
 // algorithm.
-func distanciaMATRIX(matrix [][]int, n int) {
+func distanciaMATRIX(matrix [][]int, n int, chromosome []int) int{
 	visitados := make([]int, n)
 	ruta := make([]int, n)
 	mejorRuta := make([]int, n)
@@ -1042,8 +1042,8 @@ func distanciaMATRIX(matrix [][]int, n int) {
 				if element == -1 {
 					element = i
 				}
-				distanciaActual = matrix[posActual][i]
-				if distanciaActual < matrix[posActual][element] {
+				distanciaActual = chromosome[posActual]
+				if distanciaActual < chromosome[element] {
 					element = i
 				}
 			}
@@ -1058,14 +1058,13 @@ func distanciaMATRIX(matrix [][]int, n int) {
 		posActual = element
 	}
 
-	distanciaActual = matrix[posActual][0]
-	//fmt.Println("La distancia actual es: ",distanciaActual)
+	distanciaActual = chromosome[posActual]
 	ruta[n-1] = 0
 	ruta[0] = posActual
 
 	for i := 0; i < n; i++ {
 		if i != n-1 {
-			distanciaActual += matrix[ruta[i]][ruta[i+1]]
+			distanciaActual += chromosome[ruta[i]]
 		}
 	}
 
@@ -1076,7 +1075,79 @@ func distanciaMATRIX(matrix [][]int, n int) {
 		}
 	}
 
-	fmt.Println("La distancia total es: ", mejorDistancia)
+	return mejorDistancia
+	//fmt.Println("La distancia total es: ", mejorDistancia)
+}
+
+func GeneticMATRIX(distances [][]int, numCities int) {
+	rand.Seed(time.Now().UnixNano())
+
+	// Configuración del algoritmo genético
+	populationSize := 100
+	numGenerations := 100
+	mutationRate := 0.01
+
+	// Inicializar población aleatoria
+	population := make([]Individual, populationSize)
+	for i := range population {
+		population[i] = generateRandomIndividual(numCities)
+	}
+	//fmt.Println(population)
+	// Evolución de la población
+	for generation := 0; generation < numGenerations; generation++ {
+		
+		for i := range population {
+			population[i].Fitness = distanciaMATRIX(distances, numCities, population[i].Chromosome)
+		}
+
+		// Encontrar el mejor individuo (el de menor distancia)
+		bestIndividual := population[0]
+		for _, individual := range population {
+			if individual.Fitness < bestIndividual.Fitness {
+				bestIndividual = individual
+			}
+		}
+		
+		// Imprimir la mejor distancia en esta generación
+		//fmt.Printf("Generación %d - Mejor Distancia: %d\n", generation, bestIndividual.Fitness)
+
+		// Seleccionar padres y realizar cruzamiento
+		newPopulation := make([]Individual, populationSize)
+		for i := range population {
+			parent1 := selectParent(population)
+			parent2 := selectParent(population)
+			child := crossover(parent1, parent2)
+			newPopulation[i] = child
+		}
+
+		// Aplicar mutaciones
+		for i := range newPopulation {
+			if rand.Float64() < mutationRate {
+				mutate(newPopulation[i])
+			}
+		}
+
+		// Reemplazar la antigua población con la nueva generación
+		population = newPopulation
+	}
+
+	// Encontrar el mejor individuo después de todas las generaciones
+	for i := range population {
+		population[i].Fitness = distanciaMATRIX(distances, numCities,  population[i].Chromosome)
+	}
+	bestIndividual := population[0]
+	for _, individual := range population {
+		//fmt.Println(individual.Fitness)
+		if individual.Fitness < bestIndividual.Fitness {
+			if individual.Fitness > 0{
+				bestIndividual = individual
+			}
+			
+		}
+	}
+
+	// Imprimir la mejor distancia encontrada y el orden de las ciudades
+	fmt.Printf("Mejor Distancia Final: %d\n", bestIndividual.Fitness)
 }
 
 func ProblemaSuperior(fileName string, n int) {
@@ -1095,8 +1166,8 @@ func ProblemaSuperior(fileName string, n int) {
 	ReadFileSuperior(file, matriz, n)	
 
 	EscribirMatrizEnCSV("./Files/Excel/"+fileName[6:11]+".csv",matriz)	
-
-	distanciaMATRIX(matriz, n)
+	GeneticMATRIX(matriz, n)
+	//distanciaMATRIX(matriz, n)
 }
 
 func ReadFileInferior(file *os.File, matriz [][]int, n int) {
@@ -1196,7 +1267,7 @@ func ProblemaInferior(fileName string, n int) {
 
 	EscribirMatrizEnCSV("./Files/Excel/"+fileName[6:10]+".csv",matriz)	
 
-	distanciaMATRIX(matriz, n)
+	//distanciaMATRIX(matriz, n)
 }
 
 func SolveATSP(distances [][]int, numCities int, tour []int, chromosome []int) int {
