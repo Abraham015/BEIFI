@@ -1023,7 +1023,7 @@ func distanciaMATRIX(matrix [][]int, n int, chromosome []int) int{
 	mejorRuta := make([]int, n)
 	mejorDistancia := math.MaxInt
 	distanciaActual:=0
-	element:=-1
+	//element:=-1
 
 	for i := 0; i < n; i++ {
 		visitados[i] = 0
@@ -1032,39 +1032,16 @@ func distanciaMATRIX(matrix [][]int, n int, chromosome []int) int{
 
 	visitados[0] = 1
 	ruta[0] = 0
-	posActual:= 0
+	posActual:= chromosome[0]
 
-	for true{
-		element = -1
 
-		for i := 0; i < n; i++ {
-			if visitados[i] == 0 {
-				if element == -1 {
-					element = i
-				}
-				distanciaActual = chromosome[posActual]
-				if distanciaActual < chromosome[element] {
-					element = i
-				}
-			}
-		}
-
-		if element == -1 {
-			break
-		}
-
-		visitados[element] = 1
-		ruta[element] = posActual
-		posActual = element
-	}
-
-	distanciaActual = chromosome[posActual]
+	distanciaActual = matrix[posActual][0]
 	ruta[n-1] = 0
 	ruta[0] = posActual
 
 	for i := 0; i < n; i++ {
 		if i != n-1 {
-			distanciaActual += chromosome[ruta[i]]
+			distanciaActual +=  matrix[chromosome[i]][chromosome[i+1]]
 		}
 	}
 
@@ -1266,6 +1243,8 @@ func ProblemaInferior(fileName string, n int) {
 	CompletarMatriz(matriz, n)
 
 	EscribirMatrizEnCSV("./Files/Excel/"+fileName[6:10]+".csv",matriz)	
+	
+	GeneticMATRIX(matriz, n)
 
 	//distanciaMATRIX(matriz, n)
 }
