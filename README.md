@@ -25,3 +25,7 @@ Rama creada para la generación del algoritmo genetico para el problema del viaj
 
 >23-11-2023
 1. Se realiza la modificación del problema matrix
+2. Se acomoda los problemas MATRIX
+
+>06-12-2023
+1. Se realizan nuevas mutaciones
