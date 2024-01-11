@@ -405,10 +405,13 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 
 		// Seleccionar padres y realizar cruzamiento
 		newPopulation := make([]Individual, populationSize)
+		//fmt.Println("population: %d",population[0].Chromosome)
 		for i := range population {
 			child := uniformMutation(population[i].Chromosome, mutationRate)
 			newPopulation[i] = child
 		}
+
+		//fmt.Println("newPopulation: %d",newPopulation[0].Chromosome)
 
 		// Aplicar mutaciones
 		for i := range newPopulation {
