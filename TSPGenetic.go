@@ -13,6 +13,9 @@ import (
 	"errors"
 	"math/rand"
 	"time"
+	"gonum.org/v1/plot"
+    "gonum.org/v1/plot/plotter"
+    "gonum.org/v1/plot/vg"
 )
 
 type Individual struct {
@@ -281,12 +284,17 @@ func uniformMutation(chrom []int, mutationRate float64) Individual{
 	return Individual{Chromosome:chrom}
 }
 
-func swapMutation(individual []int) {
-    i, j := rand.Intn(len(individual)), rand.Intn(len(individual))
-    individual[i], individual[j] = individual[j], individual[i]
+func swapMutation(individual Individual) Individual {
+	aux := make([]int, len(individual.Chromosome))
+	copy(aux, individual.Chromosome)
+
+	i, j := rand.Intn(len(individual.Chromosome)), rand.Intn(len(individual.Chromosome))
+	aux[i], aux[j] = aux[j], aux[i]
+
+	return Individual{Chromosome: aux, Fitness: 0}
 }
 
-func inversionMutation(individual []int) {
+func inversionMutation(individual []int) Individual{
     start, end := rand.Intn(len(individual)), rand.Intn(len(individual))
     if start > end {
         start, end = end, start
@@ -294,17 +302,40 @@ func inversionMutation(individual []int) {
     for i, j := start, end; i < j; i, j = i+1, j-1 {
         individual[i], individual[j] = individual[j], individual[i]
     }
+	return Individual{Chromosome: individual}
 }
 
-func shiftMutation(individual []int) {
+func shiftMutation(individual []int) Individual {
+    if len(individual) < 2 {
+        // No hay suficientes elementos para realizar la mutación
+        return Individual{Chromosome: individual}
+    }
+
     start, end := rand.Intn(len(individual)), rand.Intn(len(individual))
+    
+    // Asegúrate de que start y end sean diferentes
+    for start == end {
+        end = rand.Intn(len(individual))
+    }
+
+    // Asegúrate de que start sea menor que end
     if start > end {
         start, end = end, start
     }
+
+    // Ajusta los índices si es necesario
+    if start >= len(individual) || end > len(individual) {
+        start, end = 0, len(individual)-1
+    }
+
     geneToShift := individual[start]
-    copy(individual[start:end], individual[start+1:end])
+    copy(individual[start+1:end], individual[start:end-1])
     individual[end-1] = geneToShift
+
+    return Individual{Chromosome: individual}
 }
+
+
 
 func DistanciaEuclidiana(x []int, y []int, chromosome []int) int {
 	var x1, x2, y1, y2 int
@@ -332,8 +363,29 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 
 	// Inicializar población aleatoria
 	population := make([]Individual, populationSize)
+	uniform_population:=make([]Individual, populationSize)
+	swap_population:=make([]Individual, populationSize)
+	inversion_population:=make([]Individual, populationSize)
+	shift_population:=make([]Individual, populationSize)
+
 	for i := range population {
 		population[i] = generateRandomIndividual(len(xdistances))
+	}
+
+	for i := range uniform_population {
+		uniform_population[i] = generateRandomIndividual(len(xdistances))
+	}
+
+	for i := range swap_population {
+		swap_population[i] = generateRandomIndividual(len(xdistances))
+	}
+
+	for i := range inversion_population {
+		inversion_population[i] = generateRandomIndividual(len(xdistances))
+	}
+
+	for i := range shift_population {
+		shift_population[i] = generateRandomIndividual(len(xdistances))
 	}
 	
 	// Evolución de la población
@@ -375,6 +427,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	for i := range population {
 		population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, population[i].Chromosome)
 	}
+
 	bestIndividual := population[0]
 	for _, individual := range population {
 		//fmt.Println(individual.Fitness)
@@ -391,13 +444,13 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 
 	for generation := 0; generation < numGenerations; generation++ {
 		// Calcular fitness de la población
-		for i := range population {
-			population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, population[i].Chromosome)
+		for i := range uniform_population {
+			uniform_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, uniform_population[i].Chromosome)
 		}
 
 		// Encontrar el mejor individuo (el de menor distancia)
-		bestIndividual := population[0]
-		for _, individual := range population {
+		bestIndividual := uniform_population[0]
+		for _, individual := range uniform_population {
 			if individual.Fitness < bestIndividual.Fitness {
 				bestIndividual = individual
 			}
@@ -406,8 +459,8 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 		// Seleccionar padres y realizar cruzamiento
 		newPopulation := make([]Individual, populationSize)
 		//fmt.Println("population: %d",population[0].Chromosome)
-		for i := range population {
-			child := uniformMutation(population[i].Chromosome, mutationRate)
+		for i := range uniform_population {
+			child := uniformMutation(uniform_population[i].Chromosome, mutationRate)
 			newPopulation[i] = child
 		}
 
@@ -425,11 +478,11 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	}
 
 	// Encontrar el mejor individuo después de todas las generaciones
-	for i := range population {
-		population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, population[i].Chromosome)
+	for i := range uniform_population {
+		uniform_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, uniform_population[i].Chromosome)
 	}
-	bestIndividual = population[0]
-	for _, individual := range population {
+	bestIndividual = uniform_population[0]
+	for _, individual := range uniform_population {
 		//fmt.Println(individual.Fitness)
 		if individual.Fitness < bestIndividual.Fitness {
 			if individual.Fitness > 0{
@@ -439,6 +492,160 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 		}
 	}
 	fmt.Printf("Distancia usando Mutacion uniforme: %d\n", bestIndividual.Fitness)
+
+	for generation := 0; generation < numGenerations; generation++ {
+		// Calcular fitness de la población
+		for i := range swap_population {
+			swap_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, swap_population[i].Chromosome)
+		}
+
+		// Encontrar el mejor individuo (el de menor distancia)
+		bestIndividual := swap_population[0]
+		for _, individual := range swap_population {
+			if individual.Fitness < bestIndividual.Fitness {
+				bestIndividual = individual
+			}
+		}
+
+		// Seleccionar padres y realizar cruzamiento
+		newPopulation := make([]Individual, populationSize)
+		//fmt.Println("population: %d",population[0].Chromosome)
+		for i := range swap_population {
+			child := swapMutation(swap_population[i])
+			newPopulation[i] = child
+		}
+
+		//fmt.Println("newPopulation: %d",newPopulation[0].Chromosome)
+
+		// Aplicar mutaciones
+		for i := range newPopulation {
+			if rand.Float64() < mutationRate {
+				mutate(newPopulation[i])
+			}
+		}
+
+		// Reemplazar la antigua población con la nueva generación
+		population = newPopulation
+	}
+
+	// Encontrar el mejor individuo después de todas las generaciones
+	for i := range swap_population {
+		swap_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, swap_population[i].Chromosome)
+	}
+	bestIndividual = swap_population[0]
+	for _, individual := range swap_population {
+		//fmt.Println(individual.Fitness)
+		if individual.Fitness < bestIndividual.Fitness {
+			if individual.Fitness > 0{
+				bestIndividual = individual
+			}
+			
+		}
+	}
+	fmt.Printf("Distancia usando swap mutation: %d\n", bestIndividual.Fitness)
+
+	for generation := 0; generation < numGenerations; generation++ {
+		// Calcular fitness de la población
+		for i := range inversion_population {
+			inversion_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, inversion_population[i].Chromosome)
+		}
+
+		// Encontrar el mejor individuo (el de menor distancia)
+		bestIndividual := inversion_population[0]
+		for _, individual := range inversion_population {
+			if individual.Fitness < bestIndividual.Fitness {
+				bestIndividual = individual
+			}
+		}
+
+		// Seleccionar padres y realizar cruzamiento
+		newPopulation := make([]Individual, populationSize)
+		//fmt.Println("population: %d",population[0].Chromosome)
+		for i := range inversion_population {
+			child := inversionMutation(inversion_population[i].Chromosome)
+			newPopulation[i] = child
+		}
+
+		//fmt.Println("newPopulation: %d",newPopulation[0].Chromosome)
+
+		// Aplicar mutaciones
+		for i := range newPopulation {
+			if rand.Float64() < mutationRate {
+				mutate(newPopulation[i])
+			}
+		}
+
+		// Reemplazar la antigua población con la nueva generación
+		population = newPopulation
+	}
+
+	// Encontrar el mejor individuo después de todas las generaciones
+	for i := range inversion_population {
+		inversion_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, inversion_population[i].Chromosome)
+	}
+	bestIndividual = inversion_population[0]
+	for _, individual := range inversion_population {
+		//fmt.Println(individual.Fitness)
+		if individual.Fitness < bestIndividual.Fitness {
+			if individual.Fitness > 0{
+				bestIndividual = individual
+			}
+			
+		}
+	}
+	fmt.Printf("Distancia usando inverse mutation: %d\n", bestIndividual.Fitness)
+
+	for generation := 0; generation < numGenerations; generation++ {
+		// Calcular fitness de la población
+		for i := range shift_population {
+			shift_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, shift_population[i].Chromosome)
+		}
+
+		// Encontrar el mejor individuo (el de menor distancia)
+		bestIndividual := shift_population[0]
+		for _, individual := range shift_population {
+			if individual.Fitness < bestIndividual.Fitness {
+				bestIndividual = individual
+			}
+		}
+
+		// Seleccionar padres y realizar cruzamiento
+		newPopulation := make([]Individual, populationSize)
+		//fmt.Println("population: %d",population[0].Chromosome)
+		for i := range shift_population {
+			child := shiftMutation(shift_population[i].Chromosome)
+			newPopulation[i] = child
+		}
+
+		//fmt.Println("newPopulation: %d",newPopulation[0].Chromosome)
+
+		// Aplicar mutaciones
+		for i := range newPopulation {
+			if rand.Float64() < mutationRate {
+				mutate(newPopulation[i])
+			}
+		}
+
+		// Reemplazar la antigua población con la nueva generación
+		population = newPopulation
+	}
+
+	// Encontrar el mejor individuo después de todas las generaciones
+	for i := range shift_population {
+		shift_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, shift_population[i].Chromosome)
+	}
+	bestIndividual = shift_population[0]
+	for _, individual := range shift_population {
+		//fmt.Println(individual.Fitness)
+		if individual.Fitness < bestIndividual.Fitness {
+			if individual.Fitness > 0{
+				bestIndividual = individual
+			}
+			
+		}
+	}
+	fmt.Printf("Distancia usando shift mutation: %d\n", bestIndividual.Fitness)
+
 }
 
 func ReadFileEuclidiana(file *os.File, numbernode []string, firstnode, secondnode []int) error {
