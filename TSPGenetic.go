@@ -333,6 +333,44 @@ func shiftMutation(individual []int) Individual {
     return Individual{Chromosome: individual}
 }
 
+func writeTxt(crossover_fitness []int, uniform_fitness []int, swap_fitness []int, inversion_fitness []int, shift_fitness []int, populationSize int){
+	file, err := os.Create("./Files/Data/fitness_data.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	// Crear un escritor en el archivo
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	header := fmt.Sprintf("Crossover\tUniform\tSwap\tInversion\tShift\n")
+
+	// Escribir el encabezado en el archivo
+	_, err = writer.WriteString(header)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Escribir datos
+	for i := 0; i < populationSize; i++ {
+		// Formatear cada conjunto de valores en una nueva línea
+		line := fmt.Sprintf("%d\t%d\t%d\t%d\t%d\n",
+			crossover_fitness[i],
+			uniform_fitness[i],
+			swap_fitness[i],
+			inversion_fitness[i],
+			shift_fitness[i],
+		)
+
+		// Escribir la línea en el archivo
+		_, err := writer.WriteString(line) // Cambiado el nombre de la variable de error
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
 func DistanciaEuclidiana(x []int, y []int, chromosome []int) int {
 	var x1, x2, y1, y2 int
 	distance := 0
@@ -643,41 +681,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	}
 	fmt.Printf("Distancia usando shift mutation: %d\n", bestIndividual.Fitness)
 
-	file, err := os.Create("./Files/Data/fitness_data.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	// Crear un escritor en el archivo
-	writer := bufio.NewWriter(file)
-	defer writer.Flush()
-
-	header := fmt.Sprintf("Crossover\tUniform\tSwap\tInversion\tShift\n")
-
-	// Escribir el encabezado en el archivo
-	_, err = writer.WriteString(header)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Escribir datos
-	for i := 0; i < populationSize; i++ {
-		// Formatear cada conjunto de valores en una nueva línea
-		line := fmt.Sprintf("%d\t%d\t%d\t%d\t%d\n",
-			crossover_fitness[i],
-			uniform_fitness[i],
-			swap_fitness[i],
-			inversion_fitness[i],
-			shift_fitness[i],
-		)
-
-		// Escribir la línea en el archivo
-		_, err := writer.WriteString(line) // Cambiado el nombre de la variable de error
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	writeTxt(crossover_fitness, uniform_fitness, swap_fitness, inversion_fitness, shift_fitness, populationSize)
 
 }
 
