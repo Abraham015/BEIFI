@@ -13,9 +13,7 @@ import (
 	"errors"
 	"math/rand"
 	"time"
-	"gonum.org/v1/plot"
-    "gonum.org/v1/plot/plotter"
-    "gonum.org/v1/plot/vg"
+	"log"
 )
 
 type Individual struct {
@@ -335,8 +333,6 @@ func shiftMutation(individual []int) Individual {
     return Individual{Chromosome: individual}
 }
 
-
-
 func DistanciaEuclidiana(x []int, y []int, chromosome []int) int {
 	var x1, x2, y1, y2 int
 	distance := 0
@@ -368,25 +364,21 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	inversion_population:=make([]Individual, populationSize)
 	shift_population:=make([]Individual, populationSize)
 
-	for i := range population {
+	for i:=0; i<populationSize; i++{
 		population[i] = generateRandomIndividual(len(xdistances))
-	}
-
-	for i := range uniform_population {
 		uniform_population[i] = generateRandomIndividual(len(xdistances))
-	}
-
-	for i := range swap_population {
 		swap_population[i] = generateRandomIndividual(len(xdistances))
-	}
-
-	for i := range inversion_population {
 		inversion_population[i] = generateRandomIndividual(len(xdistances))
-	}
-
-	for i := range shift_population {
 		shift_population[i] = generateRandomIndividual(len(xdistances))
 	}
+
+	//Se crean arreglos para almacenar los fitness para poder graficarlos
+	crossover_fitness:=make([]int, populationSize)
+	uniform_fitness:=make([]int, populationSize)
+	swap_fitness:=make([]int, populationSize)
+	inversion_fitness:=make([]int, populationSize)
+	shift_fitness:=make([]int, populationSize)
+
 	
 	// Evolución de la población
 	for generation := 0; generation < numGenerations; generation++ {
@@ -426,6 +418,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	// Encontrar el mejor individuo después de todas las generaciones
 	for i := range population {
 		population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, population[i].Chromosome)
+		crossover_fitness[i]=population[i].Fitness
 	}
 
 	bestIndividual := population[0]
@@ -480,6 +473,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	// Encontrar el mejor individuo después de todas las generaciones
 	for i := range uniform_population {
 		uniform_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, uniform_population[i].Chromosome)
+		uniform_fitness[i]=uniform_population[i].Fitness
 	}
 	bestIndividual = uniform_population[0]
 	for _, individual := range uniform_population {
@@ -531,6 +525,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	// Encontrar el mejor individuo después de todas las generaciones
 	for i := range swap_population {
 		swap_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, swap_population[i].Chromosome)
+		swap_fitness[i]=swap_population[i].Fitness
 	}
 	bestIndividual = swap_population[0]
 	for _, individual := range swap_population {
@@ -582,6 +577,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	// Encontrar el mejor individuo después de todas las generaciones
 	for i := range inversion_population {
 		inversion_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, inversion_population[i].Chromosome)
+		inversion_fitness[i]=inversion_population[i].Fitness 
 	}
 	bestIndividual = inversion_population[0]
 	for _, individual := range inversion_population {
@@ -633,6 +629,7 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 	// Encontrar el mejor individuo después de todas las generaciones
 	for i := range shift_population {
 		shift_population[i].Fitness = DistanciaEuclidiana(xdistances, ydistances, shift_population[i].Chromosome)
+		shift_fitness[i]=shift_population[i].Fitness
 	}
 	bestIndividual = shift_population[0]
 	for _, individual := range shift_population {
@@ -645,6 +642,42 @@ func GeneticEuclideano(xdistances []int, ydistances []int) {
 		}
 	}
 	fmt.Printf("Distancia usando shift mutation: %d\n", bestIndividual.Fitness)
+
+	file, err := os.Create("./Files/Data/fitness_data.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	// Crear un escritor en el archivo
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	header := fmt.Sprintf("Crossover\tUniform\tSwap\tInversion\tShift\n")
+
+	// Escribir el encabezado en el archivo
+	_, err = writer.WriteString(header)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Escribir datos
+	for i := 0; i < populationSize; i++ {
+		// Formatear cada conjunto de valores en una nueva línea
+		line := fmt.Sprintf("%d\t%d\t%d\t%d\t%d\n",
+			crossover_fitness[i],
+			uniform_fitness[i],
+			swap_fitness[i],
+			inversion_fitness[i],
+			shift_fitness[i],
+		)
+
+		// Escribir la línea en el archivo
+		_, err := writer.WriteString(line) // Cambiado el nombre de la variable de error
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 }
 
